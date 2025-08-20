@@ -17,12 +17,7 @@ class BaseController extends Controller
         parent::initController($request, $response, $logger);
         
         $this->session = \Config\Services::session();
-        
-        if (!session()->has('logged_in') && 
-            !($this instanceof AuthController) &&
-            !($this instanceof Home)) {
-            return redirect()->to('/login');
-        }
+        // Hapus pengecekan auth di sini karena sudah ditangani oleh filter
     }
 
     protected function isAdmin()
