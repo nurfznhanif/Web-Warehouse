@@ -24,14 +24,4 @@ class BaseController extends Controller
     {
         return session()->get('role') === 'admin';
     }
-
-    protected function renderView($view, $data = [])
-    {
-        $data['session'] = $this->session;
-        $data['isAdmin'] = $this->isAdmin();
-        
-        echo view('templates/header', $data);
-        echo view($view, $data);
-        echo view('templates/footer', $data);
-    }
 }

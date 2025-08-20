@@ -11,33 +11,84 @@ use CodeIgniter\Filters\SecureHeaders;
 
 class Filters extends BaseConfig
 {
-    public $aliases = [
-        'csrf'     => CSRF::class,
-        'toolbar'  => DebugToolbar::class,
-        'honeypot' => Honeypot::class,
+    /**
+     * Configures aliases for Filter classes to
+     * make reading things nicer and simpler.
+     */
+    public array $aliases = [
+        'csrf'          => CSRF::class,
+        'toolbar'       => DebugToolbar::class,
+        'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
-        'auth'     => \App\Filters\AuthFilter::class, // Tambahkan filter auth
+        'auth'          => \App\Filters\AuthFilter::class,
     ];
 
-    public $globals = [
+    /**
+     * List of filter aliases that are always
+     * applied before and after every request.
+     */
+    public array $globals = [
         'before' => [
-            // 'honeypot',
-            'csrf' => ['except' => [
-                'login', 
-                'auth/*',
-                'incoming/get-purchase-items/*'
-            ]],
-            // 'invalidchars',
+            // 'honeypot', // Disable honeypot temporarily
+            // 'csrf',     // Disable CSRF temporarily for testing
+            'invalidchars',
         ],
         'after' => [
             'toolbar',
-            // 'honeypot',
             // 'secureheaders',
         ],
     ];
 
-    public $methods = [];
+    /**
+     * List of filter aliases that works on a
+     * particular HTTP method (GET, POST, etc.).
+     *
+     * Example:
+     * 'post' => ['foo', 'bar']
+     *
+     * If you use this, you should disable auto-routing because auto-routing
+     * permits any HTTP method to access a controller. Accessing the controller
+     * with a method you don't expect could bypass the filter.
+     */
+    public array $methods = [];
 
-    public $filters = [];
+    /**
+     * List of filter aliases that should run on any
+     * before or after URI patterns.
+     *
+     * Example:
+     * 'isLoggedIn' => ['before' => ['account/*', 'profiles/*']]
+     */
+    public array $filters = [
+        'auth' => [
+            'before' => [
+                'dashboard',
+                'dashboard/*',
+                'categories',
+                'categories/*',
+                'products',
+                'products/*',
+                'vendors',
+                'vendors/*',
+                'purchases',
+                'purchases/*',
+                'incoming-items',
+                'incoming-items/*',
+                'outgoing-items',
+                'outgoing-items/*',
+                'incoming',
+                'incoming/*',
+                'outgoing',
+                'outgoing/*',
+                'reports',
+                'reports/*',
+                'api/*',
+                'admin',
+                'admin/*',
+                'auth/profile',
+                'auth/register'
+            ]
+        ]
+    ];
 }
