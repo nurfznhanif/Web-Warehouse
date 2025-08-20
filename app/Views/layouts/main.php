@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Warehouse Management System' ?></title>
+    <title><?= $title ?? 'Vadhana Warehouse' ?></title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -59,7 +59,7 @@
             <div class="p-4">
                 <div class="flex items-center space-x-2 mb-8">
                     <i class="fas fa-warehouse text-2xl"></i>
-                    <h1 class="text-xl font-bold">Warehouse MS</h1>
+                    <h1 class="text-xl font-bold">Warehouse</h1>
                 </div>
 
                 <!-- User Info -->
@@ -143,18 +143,6 @@
                     </div>
 
                     <div class="flex items-center space-x-4">
-                        <!-- Notifications -->
-                        <div class="relative">
-                            <button class="text-gray-600 hover:text-gray-900 relative">
-                                <i class="fas fa-bell text-lg"></i>
-                                <?php if (isset($low_stock_count) && $low_stock_count > 0): ?>
-                                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                                        <?= $low_stock_count ?>
-                                    </span>
-                                <?php endif; ?>
-                            </button>
-                        </div>
-
                         <!-- User Menu -->
                         <div class="relative group">
                             <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
@@ -166,15 +154,6 @@
                             <!-- Dropdown Menu -->
                             <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                 <div class="py-1">
-                                    <a href="<?= base_url('/auth/profile') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-user mr-2"></i>Profile
-                                    </a>
-                                    <?php if (session()->get('role') === 'admin'): ?>
-                                        <a href="<?= base_url('/auth/register') ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            <i class="fas fa-user-plus mr-2"></i>Tambah User
-                                        </a>
-                                    <?php endif; ?>
-                                    <div class="border-t border-gray-100"></div>
                                     <a href="<?= base_url('/auth/logout') ?>" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                         <i class="fas fa-sign-out-alt mr-2"></i>Logout
                                     </a>
@@ -230,7 +209,7 @@
             <!-- Footer -->
             <footer class="bg-white border-t border-gray-200 px-6 py-4">
                 <div class="flex items-center justify-between text-sm text-gray-600">
-                    <p>&copy; <?= date('Y') ?> Warehouse Management System. All rights reserved.</p>
+                    <p>&copy; <?= date('Y') ?> Nurfauzan Hanif. All rights reserved.</p>
                 </div>
             </footer>
         </div>

@@ -34,7 +34,7 @@ class Dashboard extends BaseController
     public function index()
     {
         $data = [
-            'title' => 'Dashboard - Warehouse Management System',
+            'title' => 'Dashboard - Vadhana Warehouse',
             'stats' => $this->getMainStatistics(),
             'chart_data' => $this->getChartData(),
             'recent_incoming' => $this->getRecentIncoming(5),
