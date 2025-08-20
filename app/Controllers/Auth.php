@@ -14,6 +14,7 @@ class Auth extends Controller
     {
         $this->userModel = new UserModel();
         $this->session = \Config\Services::session();
+        helper(['form', 'url']);
     }
 
     public function login()
@@ -53,17 +54,39 @@ class Auth extends Controller
         $password = $this->request->getPost('password');
 
         // Find user by username or email
-        $user = $this->userModel->where('username', $username)
-            ->orWhere('email', $username)
-            ->first();
+        $user = $this->userModel->findByUsername($username);
 
-        if (!$user || !password_verify($password, $user['password'])) {
-            session()->setFlashdata('error', 'Username atau password salah!');
+        // Debug: uncomment these lines to check what's happening
+        // log_message('debug', 'Login attempt for: ' . $username);
+        // log_message('debug', 'User found: ' . ($user ? 'Yes' : 'No'));
+
+        if (!$user) {
+            session()->setFlashdata('error', 'Username atau email tidak ditemukan!');
             return view('auth/login', [
                 'title' => 'Login - Warehouse Management System',
                 'old' => $this->request->getPost()
             ]);
         }
+
+        if (!password_verify($password, $user['password'])) {
+            session()->setFlashdata('error', 'Password salah!');
+            return view('auth/login', [
+                'title' => 'Login - Warehouse Management System',
+                'old' => $this->request->getPost()
+            ]);
+        }
+
+        // Check if user is active
+        if (isset($user['status']) && $user['status'] === 'inactive') {
+            session()->setFlashdata('error', 'Akun Anda telah dinonaktifkan!');
+            return view('auth/login', [
+                'title' => 'Login - Warehouse Management System',
+                'old' => $this->request->getPost()
+            ]);
+        }
+
+        // Update last login
+        $this->userModel->updateLastLogin($user['id']);
 
         // Set session data
         $sessionData = [
@@ -120,9 +143,10 @@ class Auth extends Controller
         $userData = [
             'username' => $this->request->getPost('username'),
             'email' => $this->request->getPost('email'),
-            'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
+            'password' => $this->request->getPost('password'), // Will be hashed by beforeInsert
             'full_name' => $this->request->getPost('full_name'),
-            'role' => $this->request->getPost('role')
+            'role' => $this->request->getPost('role'),
+            'status' => 'active'
         ];
 
         if ($this->userModel->save($userData)) {
@@ -197,7 +221,7 @@ class Auth extends Controller
 
         // Update password if provided
         if ($this->request->getPost('password')) {
-            $updateData['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+            $updateData['password'] = $this->request->getPost('password');
         }
 
         if ($this->userModel->update($userId, $updateData)) {
