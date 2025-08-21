@@ -25,7 +25,7 @@ class Purchases extends BaseController
     public function index()
     {
         $data = [
-            'title' => 'Daftar Pembelian - Warehouse Management System',
+            'title' => 'Daftar Pembelian - Vadhana Warehouse',
             'purchases' => $this->purchaseModel->getPurchasesWithDetails()
         ];
 
@@ -35,7 +35,7 @@ class Purchases extends BaseController
     public function create()
     {
         $data = [
-            'title' => 'Tambah Pembelian - Warehouse Management System',
+            'title' => 'Tambah Pembelian - Vadhana Warehouse',
             'products' => $this->productModel->findAll(),
             'vendors' => $this->vendorModel->getVendorsForSelect(),
             'validation' => session()->getFlashdata('validation')
@@ -162,7 +162,7 @@ class Purchases extends BaseController
         }
 
         $data = [
-            'title' => 'Detail Pembelian - Warehouse Management System',
+            'title' => 'Detail Pembelian - Vadhana Warehouse',
             'purchase' => $purchase,
             'items' => $this->purchaseDetailModel->select('purchase_details.*, products.name as product_name, products.code as product_code')
                 ->join('products', 'products.id = purchase_details.product_id')
@@ -189,7 +189,7 @@ class Purchases extends BaseController
         }
 
         $data = [
-            'title' => 'Edit Pembelian - Warehouse Management System',
+            'title' => 'Edit Pembelian - Vadhana Warehouse',
             'purchase' => $purchase,
             'products' => $this->productModel->findAll(),
             'vendors' => $this->vendorModel->getVendorsForSelect(),

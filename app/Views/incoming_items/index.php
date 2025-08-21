@@ -15,55 +15,55 @@
 
 <!-- Statistics Cards -->
 <?php if (isset($statistics)): ?>
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">
-                <i class="fas fa-arrow-down text-xl"></i>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-arrow-down text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_transactions'] ?? 0) ?></p>
+                </div>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_transactions'] ?? 0) ?></p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-boxes text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Quantity</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_quantity'] ?? 0) ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-calendar text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Hari Ini</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['today_count'] ?? 0) ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Dari Pembelian</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['from_purchase'] ?? 0) ?></p>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                <i class="fas fa-boxes text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Quantity</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_quantity'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-purple-100 text-purple-600">
-                <i class="fas fa-calendar text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Hari Ini</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['today_count'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-orange-100 text-orange-600">
-                <i class="fas fa-shopping-cart text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Dari Pembelian</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['from_purchase'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-</div>
 <?php endif; ?>
 
 <!-- Search and Filters -->
@@ -73,36 +73,36 @@
             <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
                 Cari Produk/Kode/Vendor
             </label>
-            <input type="text" 
-                   id="search" 
-                   name="search" 
-                   value="<?= esc($search ?? '') ?>"
-                   placeholder="Masukkan kata kunci..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+            <input type="text"
+                id="search"
+                name="search"
+                value="<?= esc($search ?? '') ?>"
+                placeholder="Masukkan kata kunci..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
         </div>
-        
+
         <div>
             <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">
                 Tanggal Mulai
             </label>
-            <input type="date" 
-                   id="start_date" 
-                   name="start_date" 
-                   value="<?= esc($start_date ?? '') ?>"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+            <input type="date"
+                id="start_date"
+                name="start_date"
+                value="<?= esc($start_date ?? '') ?>"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
         </div>
-        
+
         <div>
             <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">
                 Tanggal Akhir
             </label>
-            <input type="date" 
-                   id="end_date" 
-                   name="end_date" 
-                   value="<?= esc($end_date ?? '') ?>"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+            <input type="date"
+                id="end_date"
+                name="end_date"
+                value="<?= esc($end_date ?? '') ?>"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
         </div>
-        
+
         <div class="flex items-end space-x-2">
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                 <i class="fas fa-search mr-2"></i>
@@ -168,9 +168,9 @@
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php 
-                    $no = isset($current_page) && isset($per_page) ? 
-                          (($current_page - 1) * $per_page) + 1 : 1;
+                    <?php
+                    $no = isset($current_page) && isset($per_page) ?
+                        (($current_page - 1) * $per_page) + 1 : 1;
                     ?>
                     <?php foreach ($incoming_items as $item): ?>
                         <tr class="hover:bg-gray-50">
@@ -231,13 +231,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>" 
-                                       class="text-blue-600 hover:text-blue-900" title="Edit">
+                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>"
+                                        class="text-blue-600 hover:text-blue-900" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if (session()->get('role') === 'admin'): ?>
-                                        <button onclick="deleteItem(<?= $item['id'] ?>)" 
-                                                class="text-red-600 hover:text-red-900" title="Hapus">
+                                        <button onclick="deleteItem(<?= $item['id'] ?>)"
+                                            class="text-red-600 hover:text-red-900" title="Hapus">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     <?php endif; ?>
@@ -287,22 +287,22 @@
 
 <?= $this->section('scripts') ?>
 <script>
-function deleteItem(id) {
-    if (confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok produk akan dikurangi sesuai dengan quantity yang dihapus.')) {
-        window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + id;
-    }
-}
-
-// Auto hide alerts after 5 seconds
-setTimeout(function() {
-    const alerts = document.querySelectorAll('#success-alert, #error-alert');
-    alerts.forEach(alert => {
-        if (alert) {
-            alert.style.transition = 'opacity 0.5s';
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 500);
+    function deleteItem(id) {
+        if (confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok produk akan dikurangi sesuai dengan quantity yang dihapus.')) {
+            window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + id;
         }
-    });
-}, 5000);
+    }
+
+    // Auto hide alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('#success-alert, #error-alert');
+        alerts.forEach(alert => {
+            if (alert) {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            }
+        });
+    }, 5000);
 </script>
 <?= $this->endSection() ?>

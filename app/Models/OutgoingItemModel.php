@@ -280,11 +280,11 @@ class OutgoingItemModel extends Model
                 throw new \Exception('Item tidak ditemukan');
             }
 
-            // Check stock availability for the adjustment
+            // Check stock availability BEFORE update
             $stockAdjustment = $data['quantity'] - $originalItem['quantity'];
 
             if ($stockAdjustment > 0) {
-                // Need more stock
+                // Need more stock - check if available
                 $productModel = new ProductModel();
                 $product = $productModel->find($originalItem['product_id']);
 
@@ -298,18 +298,8 @@ class OutgoingItemModel extends Model
                 throw new \Exception('Gagal mengupdate item');
             }
 
-            // Manually update product stock since trigger won't handle updates properly
-            if ($stockAdjustment != 0) {
-                $productModel = new ProductModel();
-                $product = $productModel->find($originalItem['product_id']);
-                $newStock = $product['stock'] - $stockAdjustment; // Subtract because it's outgoing
-
-                if ($newStock < 0) {
-                    throw new \Exception('Stok tidak boleh negatif');
-                }
-
-                $productModel->update($originalItem['product_id'], ['stock' => $newStock]);
-            }
+            // HAPUS MANUAL STOCK UPDATE - BIAR TRIGGER YANG HANDLE
+            // Stock akan diupdate otomatis oleh trigger after_outgoing_update
 
             $this->db->transComplete();
 
@@ -323,6 +313,8 @@ class OutgoingItemModel extends Model
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
+
+    // Method deleteOutgo
 
     public function deleteOutgoingItem($id)
     {

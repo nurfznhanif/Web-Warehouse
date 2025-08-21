@@ -75,8 +75,8 @@ $routes->group('purchases', ['filter' => 'auth'], function ($routes) {
     $routes->get('duplicate/(:num)', 'Purchases::duplicate/$1');
 });
 
-// Incoming items routes (complete)
-$routes->group('incoming-items', ['filter' => 'auth'], function($routes) {
+// Incoming items routes (complete and corrected)
+$routes->group('incoming-items', ['filter' => 'auth'], function ($routes) {
     // Main CRUD routes
     $routes->get('/', 'IncomingItems::index');
     $routes->get('index', 'IncomingItems::index');
@@ -85,14 +85,14 @@ $routes->group('incoming-items', ['filter' => 'auth'], function($routes) {
     $routes->get('edit/(:num)', 'IncomingItems::edit/$1');
     $routes->post('update/(:num)', 'IncomingItems::update/$1');
     $routes->get('delete/(:num)', 'IncomingItems::delete/$1', ['filter' => 'auth:admin']);
-    
-    // AJAX endpoints
+
+    // AJAX endpoints - HANYA DI DALAM GROUP INI
     $routes->get('get-purchase-items/(:num)', 'IncomingItems::getPurchaseItems/$1');
     $routes->get('get-product-info/(:num)', 'IncomingItems::getProductInfo/$1');
     $routes->post('validate-quantity', 'IncomingItems::validateQuantity');
     $routes->post('bulk-receive', 'IncomingItems::bulkReceive');
     $routes->get('get-summary', 'IncomingItems::getSummary');
-    
+
     // Special features
     $routes->get('receive-from-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1');
     $routes->get('history/(:num)', 'IncomingItems::history/$1');
@@ -101,11 +101,12 @@ $routes->group('incoming-items', ['filter' => 'auth'], function($routes) {
 });
 
 // Legacy routes untuk backward compatibility
-$routes->group('incoming', ['filter' => 'auth'], function($routes) {
+$routes->group('incoming', ['filter' => 'auth'], function ($routes) {
     $routes->get('/', 'IncomingItems::index');
     $routes->get('create', 'IncomingItems::create');
     $routes->post('store', 'IncomingItems::store');
     $routes->get('get-purchase-items/(:num)', 'IncomingItems::getPurchaseItems/$1');
+    $routes->post('validate-quantity', 'IncomingItems::validateQuantity');
 });
 
 // Quick access routes (tanpa prefix)

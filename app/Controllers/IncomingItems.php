@@ -36,12 +36,12 @@ class IncomingItems extends BaseController
         $offset = ($currentPage - 1) * $perPage;
         $incomingItems = $this->incomingModel->getIncomingItemsWithDetails($perPage, $offset, $search, $startDate, $endDate);
         $totalItems = $this->incomingModel->countIncomingItemsWithDetails($search, $startDate, $endDate);
-        
+
         $pager = \Config\Services::pager();
         $pager->setPath('incoming-items');
-        
+
         $data = [
-            'title' => 'Barang Masuk - Warehouse Management System',
+            'title' => 'Barang Masuk - Vadhana Warehouse',
             'incoming_items' => $incomingItems,
             'pager' => $pager->makeLinks($currentPage, $perPage, $totalItems),
             'search' => $search,
@@ -53,18 +53,22 @@ class IncomingItems extends BaseController
             'statistics' => $this->incomingModel->getIncomingStatistics()
         ];
 
+        // PERBAIKAN: Hanya return satu view saja
         return view('incoming_items/index', $data);
     }
+
+    // GANTI method create() dengan yang ini (hapus concatenation):
 
     public function create()
     {
         $data = [
-            'title' => 'Tambah Barang Masuk - Warehouse Management System',
+            'title' => 'Tambah Barang Masuk - Vadhana Warehouse',
             'products' => $this->productModel->getProductsForSelect(),
             'purchases' => $this->purchaseModel->getPurchasesWithDetails(null, null, null, 'pending'),
             'validation' => session()->getFlashdata('validation')
         ];
 
+        // PERBAIKAN: Hanya return satu view saja
         return view('incoming_items/create', $data);
     }
 
@@ -74,58 +78,64 @@ class IncomingItems extends BaseController
             'product_id' => 'required|integer',
             'date' => 'required|valid_date',
             'quantity' => 'required|decimal|greater_than[0]',
-            'purchase_id' => 'permit_empty|integer',
+            'purchase_id' => 'required|integer', // UBAH: Dari permit_empty jadi required
             'notes' => 'permit_empty|max_length[500]'
         ];
 
-        if (!$this->validate($rules)) {
+        $messages = [
+            'purchase_id' => [
+                'required' => 'Pembelian harus dipilih',
+                'integer' => 'Pembelian tidak valid'
+            ],
+            'product_id' => [
+                'required' => 'Produk harus dipilih',
+                'integer' => 'Produk tidak valid'
+            ],
+            'quantity' => [
+                'required' => 'Jumlah harus diisi',
+                'decimal' => 'Jumlah harus berupa angka',
+                'greater_than' => 'Jumlah harus lebih dari 0'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
-        $purchaseId = $this->request->getPost('purchase_id') ?: null;
+        // TAMBAHAN: Validasi khusus untuk purchase-product relationship
+        $purchaseId = $this->request->getPost('purchase_id');
         $productId = $this->request->getPost('product_id');
         $quantity = $this->request->getPost('quantity');
 
-        // WAJIB: Validasi bahwa transaksi harus berasal dari pembelian
-        if (!$purchaseId) {
-            session()->setFlashdata('error', 'Transaksi barang masuk HARUS berasal dari Purchase Order yang valid');
-            return redirect()->back()->withInput();
-        }
-
-        // Validasi purchase order exists dan produk ada dalam PO
+        // Cek apakah produk ada dalam purchase yang dipilih
         $purchaseDetail = $this->purchaseDetailModel->where('purchase_id', $purchaseId)
-                                                   ->where('product_id', $productId)
-                                                   ->first();
+            ->where('product_id', $productId)
+            ->first();
 
         if (!$purchaseDetail) {
-            session()->setFlashdata('error', 'Produk tidak ditemukan dalam purchase order yang dipilih');
+            session()->setFlashdata('error', 'Produk yang dipilih tidak tersedia dalam pembelian yang dipilih');
             return redirect()->back()->withInput();
         }
 
-        // Validasi: jumlah yang sudah diterima + yang akan diterima tidak boleh melebihi pembelian
+        // Cek apakah jumlah tidak melebihi sisa yang belum diterima
         $totalReceived = $this->incomingModel->where('purchase_id', $purchaseId)
-                                           ->where('product_id', $productId)
-                                           ->selectSum('quantity')
-                                           ->first()['quantity'] ?? 0;
+            ->where('product_id', $productId)
+            ->selectSum('quantity')
+            ->first()['quantity'] ?? 0;
 
-        if (($totalReceived + $quantity) > $purchaseDetail['quantity']) {
-            $remaining = $purchaseDetail['quantity'] - $totalReceived;
-            session()->setFlashdata('error', "GAGAL: Jumlah barang masuk ({$quantity}) + yang sudah diterima ({$totalReceived}) melebihi jumlah pembelian ({$purchaseDetail['quantity']}). Maksimal yang bisa diterima: {$remaining}");
-            return redirect()->back()->withInput();
-        }
+        $remainingQty = $purchaseDetail['quantity'] - $totalReceived;
 
-        // Validasi: quantity harus PERSIS sama dengan yang dibeli (jika belum ada yang diterima)
-        if ($totalReceived == 0 && $quantity != $purchaseDetail['quantity']) {
-            session()->setFlashdata('error', "Jumlah barang masuk ({$quantity}) harus sama dengan jumlah yang dibeli ({$purchaseDetail['quantity']})");
+        if ($quantity > $remainingQty) {
+            session()->setFlashdata('error', "Jumlah yang akan diterima ({$quantity}) melebihi sisa yang belum diterima ({$remainingQty})");
             return redirect()->back()->withInput();
         }
 
         $data = [
             'product_id' => $productId,
             'purchase_id' => $purchaseId,
-            'date' => $this->request->getPost('date'),
+            'date' => $this->request->getPost('date') . ' ' . date('H:i:s'),
             'quantity' => $quantity,
             'notes' => $this->request->getPost('notes'),
             'user_id' => session()->get('user_id')
@@ -134,10 +144,10 @@ class IncomingItems extends BaseController
         $result = $this->incomingModel->addIncomingItem($data);
 
         if ($result['success']) {
-            // Check purchase completion
+            // GUNAKAN method yang sudah ada (checkPurchaseCompletion)
             $this->checkPurchaseCompletion($purchaseId);
-            
-            session()->setFlashdata('success', "✅ Barang masuk berhasil dicatat! Stok produk bertambah {$quantity} unit. Purchase Order akan otomatis completed jika semua item sudah diterima.");
+
+            session()->setFlashdata('success', 'Barang masuk berhasil dicatat dan stok produk telah diperbarui');
             return redirect()->to('/incoming-items');
         } else {
             session()->setFlashdata('error', $result['message']);
@@ -148,14 +158,14 @@ class IncomingItems extends BaseController
     public function edit($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
         }
 
         $data = [
-            'title' => 'Edit Barang Masuk - Warehouse Management System',
+            'title' => 'Edit Barang Masuk - Vadhana Warehouse',
             'incoming_item' => $incomingItem,
             'products' => $this->productModel->getProductsForSelect(),
             'purchases' => $this->purchaseModel->getPurchasesWithDetails(),
@@ -168,7 +178,7 @@ class IncomingItems extends BaseController
     public function update($id)
     {
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -184,8 +194,8 @@ class IncomingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -215,7 +225,7 @@ class IncomingItems extends BaseController
         }
 
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -230,6 +240,108 @@ class IncomingItems extends BaseController
         }
 
         return redirect()->to('/incoming-items');
+    }
+
+    public function getPurchaseItems($purchaseId)
+    {
+        // PERBAIKAN: Cek multiple ways untuk detect AJAX
+        $isAjax = $this->request->isAJAX() ||
+            $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' ||
+            $this->request->getHeaderLine('Accept') === 'application/json';
+
+        // Log untuk debugging
+        log_message('info', 'getPurchaseItems called - Purchase ID: ' . $purchaseId);
+        log_message('info', 'isAJAX: ' . ($this->request->isAJAX() ? 'true' : 'false'));
+        log_message('info', 'X-Requested-With: ' . $this->request->getHeaderLine('X-Requested-With'));
+        log_message('info', 'Accept header: ' . $this->request->getHeaderLine('Accept'));
+
+        if (!$isAjax) {
+            log_message('error', 'Not detected as AJAX request');
+
+            // Jika bukan AJAX, return JSON anyway untuk debugging
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Request tidak dikenali sebagai AJAX',
+                'debug' => [
+                    'isAJAX' => $this->request->isAJAX(),
+                    'X-Requested-With' => $this->request->getHeaderLine('X-Requested-With'),
+                    'Accept' => $this->request->getHeaderLine('Accept'),
+                    'method' => $this->request->getMethod(),
+                    'uri' => (string) $this->request->getUri()
+                ]
+            ]);
+        }
+
+        try {
+            // Validasi purchase ID
+            if (empty($purchaseId) || !is_numeric($purchaseId)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Purchase ID tidak valid',
+                    'items' => []
+                ]);
+            }
+
+            // Cek apakah purchase exists
+            $purchase = $this->purchaseModel->find($purchaseId);
+            if (!$purchase) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Purchase tidak ditemukan',
+                    'items' => []
+                ]);
+            }
+
+            // Get purchase details
+            $purchaseDetails = $this->purchaseDetailModel->getDetailsByPurchase($purchaseId);
+
+            if (empty($purchaseDetails)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada produk dalam pembelian ini',
+                    'items' => []
+                ]);
+            }
+
+            // Process each detail
+            foreach ($purchaseDetails as &$detail) {
+                $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
+                    ->where('product_id', $detail['product_id'])
+                    ->selectSum('quantity')
+                    ->first()['quantity'] ?? 0;
+
+                $detail['received_quantity'] = $receivedQty;
+                $detail['remaining_quantity'] = $detail['quantity'] - $receivedQty;
+                $detail['unit'] = $detail['unit'] ?? 'pcs';
+            }
+
+            // Filter items yang masih bisa diterima
+            $availableItems = array_filter($purchaseDetails, function ($item) {
+                return $item['remaining_quantity'] > 0;
+            });
+
+            if (empty($availableItems)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Semua item dalam pembelian ini sudah diterima lengkap',
+                    'items' => []
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Data berhasil dimuat',
+                'items' => array_values($availableItems)
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Exception in getPurchaseItems: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'items' => []
+            ]);
+        }
     }
 
     public function validateQuantity()
@@ -249,23 +361,23 @@ class IncomingItems extends BaseController
         // If purchase_id is provided, validate against purchase quantity
         if ($purchaseId) {
             $purchaseDetail = $this->purchaseDetailModel->where('purchase_id', $purchaseId)
-                                                       ->where('product_id', $productId)
-                                                       ->first();
+                ->where('product_id', $productId)
+                ->first();
 
             if (!$purchaseDetail) {
                 return $this->response->setJSON(['valid' => false, 'message' => 'Produk tidak ditemukan dalam pembelian']);
             }
 
             $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $productId)
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
+                ->where('product_id', $productId)
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
 
             $remainingQty = $purchaseDetail['quantity'] - $receivedQty;
 
             if ($quantity > $remainingQty) {
                 return $this->response->setJSON([
-                    'valid' => false, 
+                    'valid' => false,
                     'message' => "Jumlah melebihi sisa yang belum diterima ({$remainingQty})"
                 ]);
             }
@@ -281,7 +393,7 @@ class IncomingItems extends BaseController
         }
 
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             return $this->response->setJSON(['found' => false]);
         }
@@ -290,28 +402,6 @@ class IncomingItems extends BaseController
             'found' => true,
             'product' => $product
         ]);
-    }
-
-    public function getPurchaseItems($purchaseId)
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->to('/incoming-items');
-        }
-
-        $purchaseDetails = $this->purchaseDetailModel->getDetailsByPurchase($purchaseId);
-        
-        // Get already received quantities for each product
-        foreach ($purchaseDetails as &$detail) {
-            $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $detail['product_id'])
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
-            
-            $detail['received_quantity'] = $receivedQty;
-            $detail['remaining_quantity'] = $detail['quantity'] - $receivedQty;
-        }
-
-        return $this->response->setJSON($purchaseDetails);
     }
 
     public function bulkReceive()
@@ -357,7 +447,7 @@ class IncomingItems extends BaseController
         if ($result['success']) {
             // Check if purchase is fully received
             $this->checkPurchaseCompletion($purchaseId);
-            
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => count($incomingItems) . ' item berhasil diterima'
@@ -375,9 +465,9 @@ class IncomingItems extends BaseController
 
         foreach ($purchaseDetails as $detail) {
             $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $detail['product_id'])
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
 
             if ($receivedQty < $detail['quantity']) {
                 $fullyReceived = false;
@@ -394,7 +484,7 @@ class IncomingItems extends BaseController
     public function receiveFromPurchase($purchaseId)
     {
         $purchase = $this->purchaseModel->getPurchaseWithDetails($purchaseId);
-        
+
         if (!$purchase) {
             session()->setFlashdata('error', 'Purchase order tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -421,7 +511,7 @@ class IncomingItems extends BaseController
     public function history($productId)
     {
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             session()->setFlashdata('error', 'Produk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -441,17 +531,17 @@ class IncomingItems extends BaseController
     public function printReceipt($id)
     {
         $item = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$item) {
             session()->setFlashdata('error', 'Data tidak ditemukan');
             return redirect()->to('/incoming-items');
         }
-        
+
         $data = [
             'title' => 'Receipt Barang Masuk #' . $id,
             'item' => $item
         ];
-        
+
         return view('incoming_items/receipt', $data);
     }
 
@@ -460,9 +550,9 @@ class IncomingItems extends BaseController
         $format = $this->request->getGet('format') ?? 'excel';
         $startDate = $this->request->getGet('start_date');
         $endDate = $this->request->getGet('end_date');
-        
+
         $data = $this->incomingModel->getIncomingReport($startDate, $endDate);
-        
+
         if ($format === 'pdf') {
             return $this->exportToPDF($data, $startDate, $endDate);
         } else {
@@ -473,12 +563,12 @@ class IncomingItems extends BaseController
     private function exportToExcel($data, $startDate, $endDate)
     {
         $filename = 'incoming_items_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
+
         $output = fopen('php://output', 'w');
-        
+
         // CSV Header
         fputcsv($output, [
             'No',
@@ -493,7 +583,7 @@ class IncomingItems extends BaseController
             'User',
             'Catatan'
         ]);
-        
+
         // CSV Data
         foreach ($data as $index => $item) {
             fputcsv($output, [
@@ -510,7 +600,7 @@ class IncomingItems extends BaseController
                 $item['notes'] ?? '-'
             ]);
         }
-        
+
         fclose($output);
         exit;
     }
@@ -529,10 +619,10 @@ class IncomingItems extends BaseController
         if (!$this->request->isAJAX()) {
             return redirect()->to('/incoming-items');
         }
-        
+
         $startDate = $this->request->getGet('start_date');
         $endDate = $this->request->getGet('end_date');
-        
+
         $summary = [
             'total_transactions' => 0,
             'total_quantity' => 0,
@@ -540,31 +630,31 @@ class IncomingItems extends BaseController
             'from_purchase_count' => 0,
             'manual_entry_count' => 0
         ];
-        
+
         $builder = $this->incomingModel;
-        
+
         if ($startDate) {
             $builder = $builder->where('DATE(date) >=', $startDate);
         }
-        
+
         if ($endDate) {
             $builder = $builder->where('DATE(date) <=', $endDate);
         }
-        
+
         // Get statistics
         $summary['total_transactions'] = $builder->countAllResults(false);
-        
+
         $quantitySum = $builder->selectSum('quantity')->first();
         $summary['total_quantity'] = $quantitySum['quantity'] ?? 0;
-        
+
         $productCount = $builder->distinct()->countAllResults('product_id', false);
         $summary['total_products'] = $productCount;
-        
+
         $fromPurchase = $builder->where('purchase_id IS NOT NULL')->countAllResults(false);
         $summary['from_purchase_count'] = $fromPurchase;
-        
+
         $summary['manual_entry_count'] = $summary['total_transactions'] - $summary['from_purchase_count'];
-        
+
         return $this->response->setJSON($summary);
     }
 }

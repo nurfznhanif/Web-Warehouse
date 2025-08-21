@@ -33,10 +33,10 @@
     <div class="lg:col-span-2">
         <div class="bg-white rounded-lg shadow-sm p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-6">Edit Data Barang Masuk</h3>
-            
+
             <form id="incomingForm" action="<?= base_url('/incoming-items/update/' . $incoming_item['id']) ?>" method="POST">
                 <?= csrf_field() ?>
-                
+
                 <!-- Original Transaction Info -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h4 class="font-medium text-gray-900 mb-3">Informasi Transaksi Asli</h4>
@@ -66,15 +66,15 @@
                             Transaksi ini terkait dengan purchase order dan tidak dapat diubah
                         </p>
                     <?php else: ?>
-                        <select id="purchase_id" 
-                                name="purchase_id" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <select id="purchase_id"
+                            name="purchase_id"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
                             <option value="">Manual Entry (Tanpa Pembelian)</option>
                             <?php if (!empty($purchases)): ?>
                                 <?php foreach ($purchases as $purchase): ?>
-                                    <option value="<?= $purchase['id'] ?>" 
-                                            <?= old('purchase_id', $incoming_item['purchase_id']) == $purchase['id'] ? 'selected' : '' ?>>
-                                        PO #<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?> 
+                                    <option value="<?= $purchase['id'] ?>"
+                                        <?= old('purchase_id', $incoming_item['purchase_id']) == $purchase['id'] ? 'selected' : '' ?>>
+                                        PO #<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?>
                                         (<?= date('d M Y', strtotime($purchase['purchase_date'])) ?>)
                                     </option>
                                 <?php endforeach; ?>
@@ -88,17 +88,17 @@
                     <label for="product_id" class="block text-sm font-medium text-gray-700 mb-2">
                         Produk <span class="text-red-500">*</span>
                     </label>
-                    <select id="product_id" 
-                            name="product_id" 
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('product_id') ? 'border-red-500' : '' ?>">
+                    <select id="product_id"
+                        name="product_id"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('product_id') ? 'border-red-500' : '' ?>">
                         <option value="">Pilih Produk</option>
                         <?php if (!empty($products)): ?>
                             <?php foreach ($products as $product): ?>
-                                <option value="<?= $product['id'] ?>" 
-                                        data-unit="<?= esc($product['unit']) ?>"
-                                        data-stock="<?= $product['stock'] ?>"
-                                        <?= old('product_id', $incoming_item['product_id']) == $product['id'] ? 'selected' : '' ?>>
+                                <option value="<?= $product['id'] ?>"
+                                    data-unit="<?= esc($product['unit']) ?>"
+                                    data-stock="<?= $product['stock'] ?>"
+                                    <?= old('product_id', $incoming_item['product_id']) == $product['id'] ? 'selected' : '' ?>>
                                     <?= esc($product['code']) ?> - <?= esc($product['name']) ?>
                                 </option>
                             <?php endforeach; ?>
@@ -114,12 +114,12 @@
                     <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
                         Tanggal <span class="text-red-500">*</span>
                     </label>
-                    <input type="date" 
-                           id="date" 
-                           name="date" 
-                           value="<?= old('date', date('Y-m-d', strtotime($incoming_item['date']))) ?>"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('date') ? 'border-red-500' : '' ?>">
+                    <input type="date"
+                        id="date"
+                        name="date"
+                        value="<?= old('date', date('Y-m-d', strtotime($incoming_item['date']))) ?>"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('date') ? 'border-red-500' : '' ?>">
                     <?php if (isset($validation) && $validation->getError('date')): ?>
                         <p class="text-red-500 text-xs mt-1"><?= $validation->getError('date') ?></p>
                     <?php endif; ?>
@@ -131,15 +131,15 @@
                         Quantity <span class="text-red-500">*</span>
                     </label>
                     <div class="flex">
-                        <input type="number" 
-                               id="quantity" 
-                               name="quantity" 
-                               value="<?= old('quantity', $incoming_item['quantity']) ?>"
-                               step="0.01"
-                               min="0.01"
-                               required
-                               placeholder="0.00"
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('quantity') ? 'border-red-500' : '' ?>">
+                        <input type="number"
+                            id="quantity"
+                            name="quantity"
+                            value="<?= old('quantity', $incoming_item['quantity']) ?>"
+                            step="0.01"
+                            min="0.01"
+                            required
+                            placeholder="0.00"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('quantity') ? 'border-red-500' : '' ?>">
                         <span id="unitDisplay" class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700">
                             <?= esc($incoming_item['unit'] ?? 'Unit') ?>
                         </span>
@@ -170,11 +170,11 @@
                     <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
                         Catatan
                     </label>
-                    <textarea id="notes" 
-                              name="notes" 
-                              rows="3"
-                              placeholder="Tambahkan catatan mengenai perubahan ini..."
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('notes') ? 'border-red-500' : '' ?>"><?= old('notes', $incoming_item['notes']) ?></textarea>
+                    <textarea id="notes"
+                        name="notes"
+                        rows="3"
+                        placeholder="Tambahkan catatan mengenai perubahan ini..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('notes') ? 'border-red-500' : '' ?>"><?= old('notes', $incoming_item['notes']) ?></textarea>
                     <?php if (isset($validation) && $validation->getError('notes')): ?>
                         <p class="text-red-500 text-xs mt-1"><?= $validation->getError('notes') ?></p>
                     <?php endif; ?>
@@ -182,13 +182,13 @@
 
                 <!-- Submit Buttons -->
                 <div class="flex justify-end space-x-3">
-                    <a href="<?= base_url('/incoming-items') ?>" 
-                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+                    <a href="<?= base_url('/incoming-items') ?>"
+                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
                         Batal
                     </a>
-                    <button type="submit" 
-                            id="submitBtn"
-                            class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <button type="submit"
+                        id="submitBtn"
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
                         <i class="fas fa-save mr-2"></i>
                         Update Barang Masuk
                     </button>
@@ -253,40 +253,40 @@
 
 <?= $this->section('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const productSelect = document.getElementById('product_id');
-    const quantityInput = document.getElementById('quantity');
-    const unitDisplay = document.getElementById('unitDisplay');
-    const stockImpact = document.getElementById('stockImpact');
-    const currentStockSpan = document.getElementById('currentStock');
-    
-    const originalQuantity = <?= $incoming_item['quantity'] ?>;
-    const currentStock = <?= $incoming_item['current_stock'] ?? 0 ?>;
-    const productUnit = '<?= esc($incoming_item['unit']) ?>';
-    
-    // Handle product selection change
-    productSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        
-        if (this.value) {
-            const unit = selectedOption.dataset.unit;
-            unitDisplay.textContent = unit || 'Unit';
-            calculateStockImpact();
-        } else {
-            unitDisplay.textContent = 'Unit';
-            stockImpact.innerHTML = '';
-        }
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('product_id');
+        const quantityInput = document.getElementById('quantity');
+        const unitDisplay = document.getElementById('unitDisplay');
+        const stockImpact = document.getElementById('stockImpact');
+        const currentStockSpan = document.getElementById('currentStock');
 
-    // Handle quantity change
-    quantityInput.addEventListener('input', calculateStockImpact);
+        const originalQuantity = <?= $incoming_item['quantity'] ?>;
+        const currentStock = <?= $incoming_item['current_stock'] ?? 0 ?>;
+        const productUnit = '<?= esc($incoming_item['unit']) ?>';
 
-    function calculateStockImpact() {
-        const newQuantity = parseFloat(quantityInput.value) || 0;
-        const quantityDifference = newQuantity - originalQuantity;
-        const newStock = currentStock + quantityDifference;
-        
-        let impactHTML = `
+        // Handle product selection change
+        productSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+
+            if (this.value) {
+                const unit = selectedOption.dataset.unit;
+                unitDisplay.textContent = unit || 'Unit';
+                calculateStockImpact();
+            } else {
+                unitDisplay.textContent = 'Unit';
+                stockImpact.innerHTML = '';
+            }
+        });
+
+        // Handle quantity change
+        quantityInput.addEventListener('input', calculateStockImpact);
+
+        function calculateStockImpact() {
+            const newQuantity = parseFloat(quantityInput.value) || 0;
+            const quantityDifference = newQuantity - originalQuantity;
+            const newStock = currentStock + quantityDifference;
+
+            let impactHTML = `
             <div class="space-y-2">
                 <div class="flex justify-between">
                     <span>Quantity Asli:</span>
@@ -311,42 +311,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-        
-        if (newStock < 0) {
-            impactHTML += `
+
+            if (newStock < 0) {
+                impactHTML += `
                 <div class="mt-3 p-2 bg-red-100 rounded text-red-700 text-xs">
                     <i class="fas fa-exclamation-triangle mr-1"></i>
                     Peringatan: Stok akan menjadi negatif!
                 </div>
             `;
-        }
-        
-        stockImpact.innerHTML = impactHTML;
-    }
-
-    // Initialize calculation
-    calculateStockImpact();
-
-    // Form validation
-    document.getElementById('incomingForm').addEventListener('submit', function(e) {
-        const newQuantity = parseFloat(quantityInput.value) || 0;
-        const quantityDifference = newQuantity - originalQuantity;
-        const newStock = currentStock + quantityDifference;
-        
-        if (newStock < 0) {
-            e.preventDefault();
-            if (!confirm('Perubahan ini akan menyebabkan stok menjadi negatif. Apakah Anda yakin ingin melanjutkan?')) {
-                return false;
             }
+
+            stockImpact.innerHTML = impactHTML;
         }
-        
-        if (Math.abs(quantityDifference) > 0) {
-            if (!confirm(`Anda akan mengubah quantity dari ${originalQuantity} menjadi ${newQuantity} ${productUnit}. Ini akan ${quantityDifference > 0 ? 'menambah' : 'mengurangi'} stok sebesar ${Math.abs(quantityDifference)} ${productUnit}. Lanjutkan?`)) {
+
+        // Initialize calculation
+        calculateStockImpact();
+
+        // Form validation
+        document.getElementById('incomingForm').addEventListener('submit', function(e) {
+            const newQuantity = parseFloat(quantityInput.value) || 0;
+            const quantityDifference = newQuantity - originalQuantity;
+            const newStock = currentStock + quantityDifference;
+
+            if (newStock < 0) {
                 e.preventDefault();
-                return false;
+                if (!confirm('Perubahan ini akan menyebabkan stok menjadi negatif. Apakah Anda yakin ingin melanjutkan?')) {
+                    return false;
+                }
             }
-        }
+
+            if (Math.abs(quantityDifference) > 0) {
+                if (!confirm(`Anda akan mengubah quantity dari ${originalQuantity} menjadi ${newQuantity} ${productUnit}. Ini akan ${quantityDifference > 0 ? 'menambah' : 'mengurangi'} stok sebesar ${Math.abs(quantityDifference)} ${productUnit}. Lanjutkan?`)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
     });
-});
 </script>
 <?= $this->endSection() ?>

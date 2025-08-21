@@ -10,7 +10,7 @@ class IncomingItemModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'product_id',
-        'purchase_id', 
+        'purchase_id',
         'date',
         'quantity',
         'notes',
@@ -69,11 +69,11 @@ class IncomingItemModel extends Model
                                  purchases.id as purchase_number,
                                  vendors.name as vendor_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id', 'left')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                       ->join('users', 'users.id = incoming_items.user_id', 'left');
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id', 'left');
 
         if ($search) {
             $builder->groupStart()
@@ -106,9 +106,9 @@ class IncomingItemModel extends Model
     public function countIncomingItemsWithDetails($search = null, $startDate = null, $endDate = null)
     {
         $builder = $this->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id', 'left')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left');
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left');
 
         if ($search) {
             $builder->groupStart()
@@ -143,13 +143,13 @@ class IncomingItemModel extends Model
                              purchases.id as purchase_number,
                              vendors.name as vendor_name,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = incoming_items.product_id')
-                   ->join('categories', 'categories.id = products.category_id', 'left')
-                   ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                   ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                   ->join('users', 'users.id = incoming_items.user_id', 'left')
-                   ->where('incoming_items.id', $id)
-                   ->first();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id', 'left')
+            ->where('incoming_items.id', $id)
+            ->first();
     }
 
     /**
@@ -162,10 +162,10 @@ class IncomingItemModel extends Model
         try {
             // Validate if purchase exists and get purchase details
             if (isset($data['purchase_id']) && $data['purchase_id']) {
-                $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
+                $purchaseDetailModel = new PurchaseDetailModel();
                 $purchaseDetail = $purchaseDetailModel->where('purchase_id', $data['purchase_id'])
-                                                     ->where('product_id', $data['product_id'])
-                                                     ->first();
+                    ->where('product_id', $data['product_id'])
+                    ->first();
 
                 if (!$purchaseDetail) {
                     throw new \Exception('Produk tidak ditemukan dalam pembelian yang dipilih');
@@ -173,9 +173,9 @@ class IncomingItemModel extends Model
 
                 // Check if total received quantity doesn't exceed purchased quantity
                 $totalReceived = $this->where('purchase_id', $data['purchase_id'])
-                                     ->where('product_id', $data['product_id'])
-                                     ->selectSum('quantity')
-                                     ->first()['quantity'] ?? 0;
+                    ->where('product_id', $data['product_id'])
+                    ->selectSum('quantity')
+                    ->first()['quantity'] ?? 0;
 
                 if (($totalReceived + $data['quantity']) > $purchaseDetail['quantity']) {
                     throw new \Exception('Jumlah yang diterima melebihi jumlah pembelian');
@@ -189,12 +189,8 @@ class IncomingItemModel extends Model
                 throw new \Exception('Gagal menambahkan barang masuk');
             }
 
-            // Update product stock
-            $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($data['product_id']);
-            $newStock = $product['stock'] + $data['quantity'];
-            $productModel->update($data['product_id'], ['stock' => $newStock]);
-            
+            // STOK DIUPDATE OTOMATIS OLEH DATABASE TRIGGER
+
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
@@ -202,7 +198,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true, 'id' => $incomingId];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -210,7 +205,7 @@ class IncomingItemModel extends Model
     }
 
     /**
-     * Update incoming item with stock adjustment
+     * Update incoming item (HANYA SATU METHOD INI)
      */
     public function updateIncomingItem($id, $data)
     {
@@ -223,26 +218,12 @@ class IncomingItemModel extends Model
                 throw new \Exception('Item tidak ditemukan');
             }
 
-            // Calculate stock adjustment
-            $stockAdjustment = $data['quantity'] - $originalItem['quantity'];
-
             // Update incoming item
             if (!$this->update($id, $data)) {
                 throw new \Exception('Gagal mengupdate item');
             }
 
-            // Update product stock if quantity changed
-            if ($stockAdjustment != 0) {
-                $productModel = new \App\Models\ProductModel();
-                $product = $productModel->find($originalItem['product_id']);
-                $newStock = $product['stock'] + $stockAdjustment;
-                
-                if ($newStock < 0) {
-                    throw new \Exception('Stok tidak boleh negatif');
-                }
-                
-                $productModel->update($originalItem['product_id'], ['stock' => $newStock]);
-            }
+            // STOK DIUPDATE OTOMATIS OLEH DATABASE TRIGGER
 
             $this->db->transComplete();
 
@@ -251,7 +232,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -259,7 +239,7 @@ class IncomingItemModel extends Model
     }
 
     /**
-     * Delete incoming item with stock adjustment
+     * Delete incoming item (HANYA SATU METHOD INI)
      */
     public function deleteIncomingItem($id)
     {
@@ -277,16 +257,7 @@ class IncomingItemModel extends Model
                 throw new \Exception('Gagal menghapus item');
             }
 
-            // Adjust product stock (reduce by the incoming quantity)
-            $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($item['product_id']);
-            $newStock = $product['stock'] - $item['quantity'];
-            
-            if ($newStock < 0) {
-                throw new \Exception('Penghapusan akan menyebabkan stok negatif');
-            }
-            
-            $productModel->update($item['product_id'], ['stock' => $newStock]);
+            // STOK DIUPDATE OTOMATIS OLEH DATABASE TRIGGER
 
             $this->db->transComplete();
 
@@ -295,7 +266,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -337,11 +307,11 @@ class IncomingItemModel extends Model
                              products.code as product_code,
                              products.unit,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = incoming_items.product_id')
-                   ->join('users', 'users.id = incoming_items.user_id', 'left')
-                   ->orderBy('incoming_items.created_at', 'DESC')
-                   ->limit($limit)
-                   ->findAll();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('users', 'users.id = incoming_items.user_id', 'left')
+            ->orderBy('incoming_items.created_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     /**
@@ -353,13 +323,13 @@ class IncomingItemModel extends Model
                              purchases.id as purchase_id,
                              vendors.name as vendor_name,
                              users.full_name as user_name')
-                   ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                   ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                   ->join('users', 'users.id = incoming_items.user_id', 'left')
-                   ->where('incoming_items.product_id', $productId)
-                   ->orderBy('incoming_items.date', 'DESC')
-                   ->limit($limit)
-                   ->findAll();
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id', 'left')
+            ->where('incoming_items.product_id', $productId)
+            ->orderBy('incoming_items.date', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     /**
@@ -368,21 +338,21 @@ class IncomingItemModel extends Model
     public function getDailyIncomingData($days = 30)
     {
         $startDate = date('Y-m-d', strtotime("-{$days} days"));
-        
+
         $results = $this->select("DATE(date) as date, 
                                  COUNT(*) as count, 
                                  SUM(quantity) as quantity")
-                       ->where('DATE(date) >=', $startDate)
-                       ->groupBy('DATE(date)')
-                       ->orderBy('date', 'ASC')
-                       ->findAll();
-        
+            ->where('DATE(date) >=', $startDate)
+            ->groupBy('DATE(date)')
+            ->orderBy('date', 'ASC')
+            ->findAll();
+
         // Fill missing dates with zero values
         $dailyData = [];
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-{$i} days"));
             $dateLabel = date('M j', strtotime($date));
-            
+
             $found = false;
             foreach ($results as $result) {
                 if ($result['date'] === $date) {
@@ -395,7 +365,7 @@ class IncomingItemModel extends Model
                     break;
                 }
             }
-            
+
             if (!$found) {
                 $dailyData[] = [
                     'date' => $dateLabel,
@@ -404,7 +374,7 @@ class IncomingItemModel extends Model
                 ];
             }
         }
-        
+
         return $dailyData;
     }
 
@@ -430,7 +400,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -450,11 +419,11 @@ class IncomingItemModel extends Model
                                  purchases.id as purchase_number,
                                  vendors.name as vendor_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id', 'left')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                       ->join('users', 'users.id = incoming_items.user_id', 'left');
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id', 'left');
 
         if ($startDate) {
             $builder->where('DATE(incoming_items.date) >=', $startDate);
@@ -473,6 +442,6 @@ class IncomingItemModel extends Model
         }
 
         return $builder->orderBy('incoming_items.date', 'DESC')
-                      ->findAll();
+            ->findAll();
     }
 }

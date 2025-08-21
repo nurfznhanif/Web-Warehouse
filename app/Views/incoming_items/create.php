@@ -1,518 +1,319 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-
-<div class="flex justify-between items-center mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Tambah Barang Masuk</h1>
-        <p class="text-gray-600 mt-1">Catat transaksi barang masuk ke dalam inventory</p>
-    </div>
-    <a href="<?= base_url('/incoming-items') ?>" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Kembali
-    </a>
-</div>
-
-<!-- Alert for validation errors -->
-<?php if (isset($validation) && $validation->getErrors()): ?>
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-        <div class="flex items-center">
-            <i class="fas fa-exclamation-circle mr-2"></i>
-            <strong>Terdapat kesalahan pada form:</strong>
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Tambah Barang Masuk</h1>
+                <p class="mt-2 text-gray-600">Catat penerimaan barang dari pembelian</p>
+            </div>
+            <a href="<?= base_url('/incoming-items') ?>"
+                class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Kembali
+            </a>
         </div>
-        <ul class="mt-2 list-disc list-inside">
-            <?php foreach ($validation->getErrors() as $error): ?>
-                <li><?= esc($error) ?></li>
-            <?php endforeach; ?>
-        </ul>
     </div>
-<?php endif; ?>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Main Form -->
-    <div class="lg:col-span-2">
-        <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-6">Form Barang Masuk</h3>
-            
-            <form id="incomingForm" action="<?= base_url('/incoming-items/store') ?>" method="POST">
-                <?= csrf_field() ?>
-                
-                <!-- Purchase Selection -->
-                <div class="mb-6">
+    <!-- Alert untuk validation errors -->
+    <?php if (session()->getFlashdata('validation')): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <h4 class="font-bold">Terdapat kesalahan:</h4>
+            <ul class="mt-2">
+                <?php foreach (session()->getFlashdata('validation')->getErrors() as $error): ?>
+                    <li>• <?= esc($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <!-- Alert untuk error messages -->
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <?= session()->getFlashdata('error') ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <form action="<?= base_url('/incoming-items/store') ?>" method="POST" id="incomingForm">
+            <?= csrf_field() ?>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Purchase Selection (WAJIB) -->
+                <div class="md:col-span-2">
                     <label for="purchase_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Pilih Pembelian (Opsional)
+                        Pembelian <span class="text-red-500">*</span>
                     </label>
-                    <select id="purchase_id" 
-                            name="purchase_id" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <option value="">Manual Entry (Tanpa Pembelian)</option>
-                        <?php if (!empty($purchases)): ?>
-                            <?php foreach ($purchases as $purchase): ?>
-                                <option value="<?= $purchase['id'] ?>" 
-                                        <?= old('purchase_id') == $purchase['id'] ? 'selected' : '' ?>>
-                                    PO #<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?> 
-                                    (<?= date('d M Y', strtotime($purchase['purchase_date'])) ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                    <select id="purchase_id" name="purchase_id"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= session('errors.purchase_id') ? 'border-red-500' : '' ?>"
+                        required onchange="loadPurchaseProducts()">
+                        <option value="">Pilih Pembelian</option>
+                        <?php foreach ($purchases as $purchase): ?>
+                            <option value="<?= $purchase['id'] ?>" <?= old('purchase_id') == $purchase['id'] ? 'selected' : '' ?>>
+                                PO-<?= str_pad($purchase['id'], 6, '0', STR_PAD_LEFT) ?> - <?= esc($purchase['vendor_name']) ?>
+                                (<?= date('d/m/Y', strtotime($purchase['purchase_date'])) ?>)
+                            </option>
+                        <?php endforeach; ?>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">
-                        Pilih pembelian jika barang masuk berasal dari purchase order
-                    </p>
+                    <?php if (session('errors.purchase_id')): ?>
+                        <p class="text-red-500 text-sm mt-1"><?= session('errors.purchase_id') ?></p>
+                    <?php endif; ?>
+                    <p class="text-gray-500 text-sm mt-1">Pilih pembelian terlebih dahulu untuk memuat produk yang tersedia</p>
                 </div>
 
-                <!-- Product Selection -->
-                <div class="mb-6">
+                <!-- Product Selection (Akan dimuat berdasarkan purchase) -->
+                <div class="md:col-span-2">
                     <label for="product_id" class="block text-sm font-medium text-gray-700 mb-2">
                         Produk <span class="text-red-500">*</span>
                     </label>
-                    <select id="product_id" 
-                            name="product_id" 
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('product_id') ? 'border-red-500' : '' ?>">
-                        <option value="">Pilih Produk</option>
-                        <?php if (!empty($products)): ?>
-                            <?php foreach ($products as $product): ?>
-                                <option value="<?= $product['id'] ?>" 
-                                        data-unit="<?= esc($product['unit']) ?>"
-                                        data-stock="<?= $product['stock'] ?>"
-                                        <?= old('product_id') == $product['id'] ? 'selected' : '' ?>>
-                                    <?= esc($product['code']) ?> - <?= esc($product['name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                    <select id="product_id" name="product_id"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= session('errors.product_id') ? 'border-red-500' : '' ?>"
+                        required disabled onchange="updateQuantityInfo()">
+                        <option value="">Pilih pembelian terlebih dahulu</option>
                     </select>
-                    <?php if (isset($validation) && $validation->getError('product_id')): ?>
-                        <p class="text-red-500 text-xs mt-1"><?= $validation->getError('product_id') ?></p>
+                    <?php if (session('errors.product_id')): ?>
+                        <p class="text-red-500 text-sm mt-1"><?= session('errors.product_id') ?></p>
                     <?php endif; ?>
                 </div>
 
-                <!-- Purchase Items (shown when purchase is selected) -->
-                <div id="purchaseItems" class="mb-6 hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Item dari Pembelian
-                    </label>
-                    <div id="purchaseItemsList" class="space-y-2">
-                        <!-- Items will be loaded here via AJAX -->
+                <!-- Quantity Info Panel -->
+                <div class="md:col-span-2" id="quantityInfoPanel" style="display: none;">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-800 mb-2">Informasi Kuantitas</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Jumlah Dibeli:</span>
+                                <span id="purchasedQty" class="font-medium text-blue-800">-</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Sudah Diterima:</span>
+                                <span id="receivedQty" class="font-medium text-green-600">-</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Sisa Belum Diterima:</span>
+                                <span id="remainingQty" class="font-medium text-orange-600">-</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Date -->
-                <div class="mb-6">
+                <div>
                     <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
                         Tanggal <span class="text-red-500">*</span>
                     </label>
-                    <input type="date" 
-                           id="date" 
-                           name="date" 
-                           value="<?= old('date', date('Y-m-d')) ?>"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('date') ? 'border-red-500' : '' ?>">
-                    <?php if (isset($validation) && $validation->getError('date')): ?>
-                        <p class="text-red-500 text-xs mt-1"><?= $validation->getError('date') ?></p>
+                    <input type="date" id="date" name="date"
+                        value="<?= old('date', date('Y-m-d')) ?>"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= session('errors.date') ? 'border-red-500' : '' ?>"
+                        required>
+                    <?php if (session('errors.date')): ?>
+                        <p class="text-red-500 text-sm mt-1"><?= session('errors.date') ?></p>
                     <?php endif; ?>
                 </div>
 
                 <!-- Quantity -->
-                <div class="mb-6">
+                <div>
                     <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity <span class="text-red-500">*</span>
+                        Jumlah <span class="text-red-500">*</span>
                     </label>
-                    <div class="flex">
-                        <input type="number" 
-                               id="quantity" 
-                               name="quantity" 
-                               value="<?= old('quantity') ?>"
-                               step="0.01"
-                               min="0.01"
-                               required
-                               placeholder="0.00"
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('quantity') ? 'border-red-500' : '' ?>">
-                        <span id="unitDisplay" class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700">
-                            Unit
-                        </span>
-                    </div>
-                    <div id="quantityWarning" class="text-orange-600 text-xs mt-1 hidden"></div>
-                    <div id="quantityError" class="text-red-600 text-xs mt-1 hidden"></div>
-                    <?php if (isset($validation) && $validation->getError('quantity')): ?>
-                        <p class="text-red-500 text-xs mt-1"><?= $validation->getError('quantity') ?></p>
+                    <input type="number" id="quantity" name="quantity"
+                        value="<?= old('quantity') ?>"
+                        step="0.01" min="0.01"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= session('errors.quantity') ? 'border-red-500' : '' ?>"
+                        required disabled readonly>
+                    <?php if (session('errors.quantity')): ?>
+                        <p class="text-red-500 text-sm mt-1"><?= session('errors.quantity') ?></p>
                     <?php endif; ?>
+                    <p class="text-gray-500 text-sm mt-1">Jumlah otomatis sesuai sisa yang belum diterima</p>
                 </div>
 
                 <!-- Notes -->
-                <div class="mb-6">
+                <div class="md:col-span-2">
                     <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
                         Catatan
                     </label>
-                    <textarea id="notes" 
-                              name="notes" 
-                              rows="3"
-                              placeholder="Tambahkan catatan mengenai barang masuk ini..."
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 <?= isset($validation) && $validation->getError('notes') ? 'border-red-500' : '' ?>"><?= old('notes') ?></textarea>
-                    <?php if (isset($validation) && $validation->getError('notes')): ?>
-                        <p class="text-red-500 text-xs mt-1"><?= $validation->getError('notes') ?></p>
+                    <textarea id="notes" name="notes" rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= session('errors.notes') ? 'border-red-500' : '' ?>"
+                        placeholder="Catatan tambahan (opsional)"><?= old('notes') ?></textarea>
+                    <?php if (session('errors.notes')): ?>
+                        <p class="text-red-500 text-sm mt-1"><?= session('errors.notes') ?></p>
                     <?php endif; ?>
                 </div>
+            </div>
 
-                <!-- Submit Buttons -->
-                <div class="flex justify-end space-x-3">
-                    <a href="<?= base_url('/incoming-items') ?>" 
-                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+            <!-- Submit Button -->
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200 mt-6">
+                <div class="text-sm text-gray-600">
+                    <span class="text-red-500">*</span> Field wajib diisi
+                </div>
+                <div class="flex space-x-3">
+                    <a href="<?= base_url('/incoming-items') ?>"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors">
                         Batal
                     </a>
-                    <button type="submit" 
-                            id="submitBtn"
-                            class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <i class="fas fa-save mr-2"></i>
-                        Simpan Barang Masuk
+                    <button type="submit" id="submitBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                        <i class="fas fa-save mr-2"></i>Simpan Barang Masuk
                     </button>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Information Panel -->
-    <div class="lg:col-span-1">
-        <!-- Product Info -->
-        <div id="productInfo" class="bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Informasi Produk</h3>
-            <div id="productDetails">
-                <!-- Product details will be loaded here -->
             </div>
-        </div>
-
-        <!-- Guidelines -->
-        <div class="bg-blue-50 rounded-lg p-6">
-            <h3 class="text-lg font-medium text-blue-900 mb-4">
-                <i class="fas fa-info-circle mr-2"></i>
-                Panduan Penggunaan
-            </h3>
-            <div class="space-y-3 text-sm text-blue-800">
-                <div class="flex items-start">
-                    <i class="fas fa-check-circle mr-2 mt-0.5 text-blue-600"></i>
-                    <span>Pilih pembelian jika barang masuk dari purchase order</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-check-circle mr-2 mt-0.5 text-blue-600"></i>
-                    <span>Pastikan jumlah barang masuk sesuai dengan yang dibeli</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-check-circle mr-2 mt-0.5 text-blue-600"></i>
-                    <span>Stok produk akan otomatis bertambah setelah transaksi</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-check-circle mr-2 mt-0.5 text-blue-600"></i>
-                    <span>Validasi otomatis untuk quantity yang melebihi pembelian</span>
-                </div>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const purchaseSelect = document.getElementById('purchase_id');
-    const productSelect = document.getElementById('product_id');
-    const quantityInput = document.getElementById('quantity');
-    const unitDisplay = document.getElementById('unitDisplay');
-    const productInfo = document.getElementById('productInfo');
-    const productDetails = document.getElementById('productDetails');
-    const purchaseItems = document.getElementById('purchaseItems');
-    const purchaseItemsList = document.getElementById('purchaseItemsList');
-    const quantityWarning = document.getElementById('quantityWarning');
-    const quantityError = document.getElementById('quantityError');
-    const submitBtn = document.getElementById('submitBtn');
+    let purchaseProducts = {};
+    let currentPurchaseData = {};
 
-    let selectedPurchaseItems = {};
-    let currentProductData = null;
+    // Load products when purchase is selected
+    async function loadPurchaseProducts() {
+        const purchaseId = document.getElementById('purchase_id').value;
+        const productSelect = document.getElementById('product_id');
+        const quantityInput = document.getElementById('quantity');
+        const submitBtn = document.getElementById('submitBtn');
 
-    // Handle purchase selection
-    purchaseSelect.addEventListener('change', function() {
-        const purchaseId = this.value;
-        
-        if (purchaseId) {
-            loadPurchaseItems(purchaseId);
-            purchaseItems.classList.remove('hidden');
-        } else {
-            purchaseItems.classList.add('hidden');
-            productSelect.disabled = false;
-            clearProductSelection();
-        }
-    });
-
-    // Handle product selection
-    productSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        
-        if (this.value) {
-            const unit = selectedOption.dataset.unit;
-            const stock = selectedOption.dataset.stock;
-            
-            unitDisplay.textContent = unit || 'Unit';
-            loadProductInfo(this.value);
-            
-            currentProductData = {
-                unit: unit,
-                stock: parseInt(stock) || 0
-            };
-        } else {
-            unitDisplay.textContent = 'Unit';
-            productInfo.classList.add('hidden');
-            currentProductData = null;
-        }
-        
-        validateQuantity();
-    });
-
-    // Handle quantity input
-    quantityInput.addEventListener('input', validateQuantity);
-
-    function loadPurchaseItems(purchaseId) {
-        fetch(`<?= base_url('/incoming-items/get-purchase-items/') ?>${purchaseId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.length > 0) {
-                    displayPurchaseItems(data);
-                    restrictProductSelection(data);
-                } else {
-                    purchaseItemsList.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada item dalam pembelian ini</p>';
-                    productSelect.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading purchase items:', error);
-                purchaseItemsList.innerHTML = '<p class="text-red-500 text-sm">Gagal memuat item pembelian</p>';
-            });
-    }
-
-    function displayPurchaseItems(items) {
-        purchaseItemsList.innerHTML = '';
-        
-        items.forEach(item => {
-            const remainingQty = item.quantity - (item.received_quantity || 0);
-            const isFullyReceived = remainingQty <= 0;
-            
-            const itemElement = document.createElement('div');
-            itemElement.className = `p-3 border rounded-md ${isFullyReceived ? 'bg-gray-50 border-gray-200' : 'bg-green-50 border-green-200 cursor-pointer hover:bg-green-100'}`;
-            
-            itemElement.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex-1">
-                        <div class="font-medium text-sm">${item.product_name}</div>
-                        <div class="text-xs text-gray-500">${item.product_code}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm">
-                            <span class="text-gray-600">Dibeli:</span> 
-                            <span class="font-medium">${item.quantity} ${item.unit}</span>
-                        </div>
-                        <div class="text-xs">
-                            <span class="text-gray-600">Diterima:</span> 
-                            <span class="text-green-600">${item.received_quantity || 0}</span>
-                        </div>
-                        <div class="text-xs">
-                            <span class="text-gray-600">Sisa:</span> 
-                            <span class="font-medium ${isFullyReceived ? 'text-gray-400' : 'text-blue-600'}">${remainingQty}</span>
-                        </div>
-                    </div>
-                </div>
-                ${isFullyReceived ? 
-                    '<div class="text-xs text-gray-400 mt-1">Sudah diterima lengkap</div>' : 
-                    '<div class="text-xs text-green-600 mt-1">Klik untuk pilih produk ini</div>'
-                }
-            `;
-            
-            if (!isFullyReceived) {
-                itemElement.addEventListener('click', () => selectPurchaseItem(item));
-            }
-            
-            purchaseItemsList.appendChild(itemElement);
-        });
-        
-        selectedPurchaseItems = {};
-        items.forEach(item => {
-            selectedPurchaseItems[item.product_id] = item;
-        });
-    }
-
-    function selectPurchaseItem(item) {
-        // Set product selection
-        productSelect.value = item.product_id;
-        productSelect.dispatchEvent(new Event('change'));
-        
-        // Set max quantity to remaining quantity
-        const remainingQty = item.quantity - (item.received_quantity || 0);
-        quantityInput.max = remainingQty;
-        quantityInput.value = remainingQty; // Auto-fill with remaining quantity
-        
-        validateQuantity();
-    }
-
-    function restrictProductSelection(items) {
-        // Disable products not in purchase
-        const purchaseProductIds = items.map(item => item.product_id.toString());
-        
-        Array.from(productSelect.options).forEach(option => {
-            if (option.value && !purchaseProductIds.includes(option.value)) {
-                option.disabled = true;
-                option.style.color = '#ccc';
-            } else {
-                option.disabled = false;
-                option.style.color = '';
-            }
-        });
-    }
-
-    function clearProductSelection() {
-        productSelect.value = '';
+        // Reset form
+        productSelect.innerHTML = '<option value="">Loading...</option>';
+        productSelect.disabled = true;
+        quantityInput.disabled = true;
         quantityInput.value = '';
-        quantityInput.max = '';
-        productInfo.classList.add('hidden');
-        currentProductData = null;
-        
-        // Re-enable all product options
-        Array.from(productSelect.options).forEach(option => {
-            option.disabled = false;
-            option.style.color = '';
-        });
-        
-        clearQuantityMessages();
-    }
+        submitBtn.disabled = true;
+        document.getElementById('quantityInfoPanel').style.display = 'none';
 
-    function loadProductInfo(productId) {
-        fetch(`<?= base_url('/incoming-items/get-product-info/') ?>${productId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.found) {
-                    displayProductInfo(data.product);
-                    productInfo.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading product info:', error);
-            });
-    }
-
-    function displayProductInfo(product) {
-        productDetails.innerHTML = `
-            <div class="space-y-3">
-                <div>
-                    <div class="text-sm font-medium text-gray-700">Nama Produk</div>
-                    <div class="text-sm text-gray-900">${product.name}</div>
-                </div>
-                <div>
-                    <div class="text-sm font-medium text-gray-700">Kode Produk</div>
-                    <div class="text-sm text-gray-900">${product.code}</div>
-                </div>
-                <div>
-                    <div class="text-sm font-medium text-gray-700">Kategori</div>
-                    <div class="text-sm text-gray-900">${product.category_name || '-'}</div>
-                </div>
-                <div>
-                    <div class="text-sm font-medium text-gray-700">Stok Saat Ini</div>
-                    <div class="text-sm">
-                        <span class="font-medium text-blue-600">${product.stock}</span>
-                        <span class="text-gray-600">${product.unit}</span>
-                    </div>
-                </div>
-                <div>
-                    <div class="text-sm font-medium text-gray-700">Stok Minimum</div>
-                    <div class="text-sm">
-                        <span class="font-medium ${product.stock <= product.min_stock ? 'text-red-600' : 'text-green-600'}">${product.min_stock || 0}</span>
-                        <span class="text-gray-600">${product.unit}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function validateQuantity() {
-        clearQuantityMessages();
-        
-        const quantity = parseFloat(quantityInput.value);
-        const purchaseId = purchaseSelect.value;
-        const productId = productSelect.value;
-        
-        if (!quantity || !productId) {
+        if (!purchaseId) {
+            productSelect.innerHTML = '<option value="">Pilih pembelian terlebih dahulu</option>';
             return;
         }
-        
-        // If from purchase, validate against purchase quantity
-        if (purchaseId && selectedPurchaseItems[productId]) {
-            const item = selectedPurchaseItems[productId];
-            const remainingQty = item.quantity - (item.received_quantity || 0);
-            
-            if (quantity > remainingQty) {
-                showQuantityError(`Jumlah melebihi sisa yang belum diterima (${remainingQty} ${item.unit})`);
-                return false;
-            } else if (quantity === remainingQty) {
-                showQuantityWarning(`Ini akan melengkapi penerimaan untuk item ini`);
+
+        try {
+            // PERBAIKAN: Tambah headers yang diperlukan untuk AJAX
+            const response = await fetch(`<?= base_url('/incoming-items/get-purchase-items/') ?>${purchaseId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const data = await response.json();
+
+            if (data.success) {
+                purchaseProducts = {};
+                productSelect.innerHTML = '<option value="">Pilih Produk</option>';
+
+                data.items.forEach(item => {
+                    purchaseProducts[item.product_id] = item;
+                    const option = document.createElement('option');
+                    option.value = item.product_id;
+                    option.textContent = `${item.product_code} - ${item.product_name} (${item.remaining_quantity} ${item.unit} tersisa)`;
+
+                    // Disable jika sudah fully received
+                    if (item.remaining_quantity <= 0) {
+                        option.disabled = true;
+                        option.textContent += ' - SUDAH LENGKAP';
+                    }
+
+                    productSelect.appendChild(option);
+                });
+
+                productSelect.disabled = false;
+            } else {
+                productSelect.innerHTML = '<option value="">Tidak ada produk tersedia</option>';
+                alert(data.message || 'Gagal memuat produk');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            productSelect.innerHTML = '<option value="">Error memuat produk</option>';
+            alert('Terjadi kesalahan saat memuat produk');
         }
-        
-        // Additional validation via AJAX for real-time checking
-        if (purchaseId) {
-            validateQuantityAjax(productId, quantity, purchaseId);
+    }
+
+    // Update quantity info when product is selected
+    function updateQuantityInfo() {
+        const productId = document.getElementById('product_id').value;
+        const quantityInput = document.getElementById('quantity');
+        const submitBtn = document.getElementById('submitBtn');
+        const panel = document.getElementById('quantityInfoPanel');
+
+        if (!productId || !purchaseProducts[productId]) {
+            panel.style.display = 'none';
+            quantityInput.disabled = true;
+            quantityInput.value = '';
+            submitBtn.disabled = true;
+            return;
         }
-        
-        return true;
-    }
 
-    function validateQuantityAjax(productId, quantity, purchaseId) {
-        const formData = new FormData();
-        formData.append('product_id', productId);
-        formData.append('quantity', quantity);
-        formData.append('purchase_id', purchaseId);
-        
-        fetch('<?= base_url('/incoming-items/validate-quantity') ?>', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.valid) {
-                showQuantityError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Validation error:', error);
-        });
-    }
+        const productData = purchaseProducts[productId];
 
-    function showQuantityWarning(message) {
-        quantityWarning.textContent = message;
-        quantityWarning.classList.remove('hidden');
-        quantityError.classList.add('hidden');
-    }
+        // Update info panel
+        document.getElementById('purchasedQty').textContent = `${productData.quantity} ${productData.unit}`;
+        document.getElementById('receivedQty').textContent = `${productData.received_quantity} ${productData.unit}`;
+        document.getElementById('remainingQty').textContent = `${productData.remaining_quantity} ${productData.unit}`;
 
-    function showQuantityError(message) {
-        quantityError.textContent = message;
-        quantityError.classList.remove('hidden');
-        quantityWarning.classList.add('hidden');
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
+        panel.style.display = 'block';
 
-    function clearQuantityMessages() {
-        quantityWarning.classList.add('hidden');
-        quantityError.classList.add('hidden');
+        // AUTO-SET quantity sama dengan remaining quantity
+        quantityInput.value = productData.remaining_quantity;
+        quantityInput.disabled = false; // Enable tapi readonly
+
+        // Enable submit button karena quantity sudah auto-set
         submitBtn.disabled = false;
-        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 
-    // Form submission validation
+    // HAPUS function validateQuantity() karena tidak perlu lagi - quantity fixed
+
+    // Form validation before submit
     document.getElementById('incomingForm').addEventListener('submit', function(e) {
-        if (!validateQuantity()) {
+        const purchaseId = document.getElementById('purchase_id').value;
+        const productId = document.getElementById('product_id').value;
+        const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+
+        if (!purchaseId) {
+            alert('Pembelian harus dipilih');
             e.preventDefault();
-            alert('Mohon perbaiki kesalahan pada form sebelum menyimpan.');
+            return;
+        }
+
+        if (!productId) {
+            alert('Produk harus dipilih');
+            e.preventDefault();
+            return;
+        }
+
+        if (!purchaseProducts[productId]) {
+            alert('Data produk tidak valid');
+            e.preventDefault();
+            return;
+        }
+
+        if (quantity <= 0) {
+            alert('Jumlah harus lebih dari 0');
+            e.preventDefault();
+            return;
+        }
+
+        // Show loading state
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+    });
+
+    // Initialize form
+    document.addEventListener('DOMContentLoaded', function() {
+        const purchaseId = document.getElementById('purchase_id').value;
+        if (purchaseId) {
+            loadPurchaseProducts();
         }
     });
-});
 </script>
+
 <?= $this->endSection() ?>

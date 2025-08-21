@@ -66,7 +66,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -79,7 +79,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-purple-100 text-purple-600">
@@ -92,7 +92,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-orange-100 text-orange-600">
@@ -174,8 +174,8 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <?php if (!empty($item['purchase_id'])): ?>
                                     <div class="text-sm text-gray-900">
-                                        <a href="<?= base_url('/purchases/view/' . $item['purchase_id']) ?>" 
-                                           class="text-blue-600 hover:text-blue-800">
+                                        <a href="<?= base_url('/purchases/view/' . $item['purchase_id']) ?>"
+                                            class="text-blue-600 hover:text-blue-800">
                                             PO #<?= $item['purchase_id'] ?>
                                         </a>
                                     </div>
@@ -202,13 +202,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>" 
-                                       class="text-blue-600 hover:text-blue-900" title="Edit">
+                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>"
+                                        class="text-blue-600 hover:text-blue-900" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <?php if (session()->get('role') === 'admin'): ?>
-                                        <button onclick="deleteItem(<?= $item['id'] ?>)" 
-                                                class="text-red-600 hover:text-red-900" title="Hapus">
+                                        <button onclick="deleteItem(<?= $item['id'] ?>)"
+                                            class="text-red-600 hover:text-red-900" title="Hapus">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     <?php endif; ?>
@@ -229,13 +229,13 @@
             Menampilkan <?= count($history) ?> transaksi terakhir
         </div>
         <div class="flex space-x-3">
-            <button onclick="window.print()" 
-                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">
+            <button onclick="window.print()"
+                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">
                 <i class="fas fa-print mr-2"></i>
                 Print
             </button>
-            <a href="<?= base_url('/incoming-items/create?product_id=' . $product['id']) ?>" 
-               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+            <a href="<?= base_url('/incoming-items/create?product_id=' . $product['id']) ?>"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
                 <i class="fas fa-plus mr-2"></i>
                 Tambah Transaksi
             </a>
@@ -247,46 +247,46 @@
 
 <?= $this->section('scripts') ?>
 <script>
-function deleteItem(id) {
-    if (confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok produk akan dikurangi sesuai dengan quantity yang dihapus.')) {
-        window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + id;
+    function deleteItem(id) {
+        if (confirm('Apakah Anda yakin ingin menghapus transaksi ini? Stok produk akan dikurangi sesuai dengan quantity yang dihapus.')) {
+            window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + id;
+        }
     }
-}
 
-// Print styling
-window.addEventListener('beforeprint', function() {
-    document.body.classList.add('print-mode');
-});
+    // Print styling
+    window.addEventListener('beforeprint', function() {
+        document.body.classList.add('print-mode');
+    });
 
-window.addEventListener('afterprint', function() {
-    document.body.classList.remove('print-mode');
-});
+    window.addEventListener('afterprint', function() {
+        document.body.classList.remove('print-mode');
+    });
 </script>
 
 <style>
-@media print {
-    .print-mode {
-        font-size: 12px;
+    @media print {
+        .print-mode {
+            font-size: 12px;
+        }
+
+        .print-mode .flex.justify-between,
+        .print-mode .bg-gray-600,
+        .print-mode .bg-green-600,
+        .print-mode button,
+        .print-mode .fas.fa-edit,
+        .print-mode .fas.fa-trash {
+            display: none !important;
+        }
+
+        .print-mode .grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+
+        .print-mode .shadow-sm {
+            box-shadow: none !important;
+            border: 1px solid #e5e7eb !important;
+        }
     }
-    
-    .print-mode .flex.justify-between,
-    .print-mode .bg-gray-600,
-    .print-mode .bg-green-600,
-    .print-mode button,
-    .print-mode .fas.fa-edit,
-    .print-mode .fas.fa-trash {
-        display: none !important;
-    }
-    
-    .print-mode .grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-    
-    .print-mode .shadow-sm {
-        box-shadow: none !important;
-        border: 1px solid #e5e7eb !important;
-    }
-}
 </style>
 
 <?= $this->endSection() ?>
