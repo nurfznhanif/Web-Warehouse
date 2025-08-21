@@ -24,46 +24,46 @@ Vadhana Warehouse Management System adalah aplikasi web yang dibangun menggunaka
 warehouse-management/
 ├── app/
 │   ├── Config/
-│   │   ├── Database.php          # Konfigurasi database
-│   │   ├── Routes.php            # Routing aplikasi
-│   │   ├── Migrations.php        # Konfigurasi migrasi
+│   │   ├── Database.php            # Konfigurasi database
+│   │   ├── Routes.php              # Routing aplikasi
+│   │   ├── Migrations.php          # Konfigurasi migrasi
 │   │   └── ...
 │   ├── Controllers/
-│   │   ├── Auth.php              # Autentikasi pengguna
-│   │   ├── Dashboard.php         # Halaman utama
-│   │   ├── Categories.php        # Manajemen kategori
-│   │   ├── Products.php          # Manajemen produk
-│   │   ├── Vendors.php           # Manajemen vendor
-│   │   ├── Purchases.php         # Manajemen pembelian
-│   │   ├── IncomingItems.php     # Transaksi barang masuk
-│   │   ├── OutgoingItems.php     # Transaksi barang keluar
-│   │   └── Reports.php           # Laporan sistem
+│   │   ├── Auth.php                # Autentikasi pengguna
+│   │   ├── Dashboard.php           # Halaman utama
+│   │   ├── Categories.php          # Manajemen kategori
+│   │   ├── Products.php            # Manajemen produk
+│   │   ├── Vendors.php             # Manajemen vendor
+│   │   ├── Purchases.php           # Manajemen pembelian
+│   │   ├── IncomingItems.php       # Transaksi barang masuk
+│   │   ├── OutgoingItems.php       # Transaksi barang keluar
+│   │   └── Reports.php             # Laporan sistem
 │   ├── Models/
-│   │   ├── UserModel.php         # Model pengguna
-│   │   ├── CategoryModel.php     # Model kategori
-│   │   ├── ProductModel.php      # Model produk
-│   │   ├── VendorModel.php       # Model vendor
-│   │   ├── PurchaseModel.php     # Model pembelian
+│   │   ├── UserModel.php           # Model pengguna
+│   │   ├── CategoryModel.php       # Model kategori
+│   │   ├── ProductModel.php        # Model produk
+│   │   ├── VendorModel.php         # Model vendor
+│   │   ├── PurchaseModel.php       # Model pembelian
 │   │   ├── PurchaseDetailModel.php # Model detail pembelian
-│   │   ├── IncomingItemModel.php # Model barang masuk
-│   │   └── OutgoingItemModel.php # Model barang keluar
+│   │   ├── IncomingItemModel.php   # Model barang masuk
+│   │   └── OutgoingItemModel.php   # Model barang keluar
 │   ├── Views/
-│       ├── layouts/              # Template layout
-│       ├── auth/                 # Halaman autentikasi
-│       ├── dashboard/            # Halaman dashboard
-│       ├── categories/           # Halaman kategori
-│       ├── products/             # Halaman produk
-│       ├── vendors/              # Halaman vendor
-│       ├── purchases/            # Halaman pembelian
-│       ├── incoming_items/       # Halaman barang masuk
-│       ├── outgoing_items/       # Halaman barang keluar
-│       └── reports/              # Halaman laporan
-├── public/                       # Asset publik (CSS, JS, images)
-├── writable/                     # Folder writable
-├── vendor/                       # Dependencies Composer
-├── .env                          # Environment variables
-├── composer.json                 # Composer configuration
-└── README.md                     # Dokumentasi ini
+│       ├── layouts/                # Template layout
+│       ├── auth/                   # Halaman autentikasi
+│       ├── dashboard/              # Halaman dashboard
+│       ├── categories/             # Halaman kategori
+│       ├── products/               # Halaman produk
+│       ├── vendors/                # Halaman vendor
+│       ├── purchases/              # Halaman pembelian
+│       ├── incoming_items/         # Halaman barang masuk
+│       ├── outgoing_items/         # Halaman barang keluar
+│       └── reports/                # Halaman laporan
+├── public/                         # Asset publik (CSS, JS, images)
+├── writable/                       # Folder writable
+├── vendor/                         # Dependencies Composer
+├── .env                            # Environment variables
+├── composer.json                   # Composer configuration
+└── README.md                       # Dokumentasi ini
 ```
 
 ---
