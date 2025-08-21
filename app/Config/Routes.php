@@ -32,18 +32,18 @@ $routes->get('/categories/edit/(:num)', 'Categories::edit/$1');
 $routes->post('/categories/update/(:num)', 'Categories::update/$1');
 $routes->get('/categories/delete/(:num)', 'Categories::delete/$1');
 
-// Debug routes (remove in production)
-$routes->get('/categories/test-db', 'Categories::testDb');
-$routes->post('/categories/store-test', 'Categories::storeTest');
-$routes->get('/categories/test-redirect', 'Categories::testRedirect');
-
-// Products routes
-$routes->get('/products', 'Products::index');
-$routes->get('/products/create', 'Products::create');
-$routes->post('/products/store', 'Products::store');
-$routes->get('/products/edit/(:num)', 'Products::edit/$1');
-$routes->post('/products/update/(:num)', 'Products::update/$1');
-$routes->get('/products/delete/(:num)', 'Products::delete/$1');
+// Products routes - dengan filter auth
+$routes->group('products', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'Products::index');
+    $routes->get('index', 'Products::index');
+    $routes->get('create', 'Products::create');
+    $routes->post('store', 'Products::store');
+    $routes->get('view/(:num)', 'Products::view/$1');
+    $routes->get('edit/(:num)', 'Products::edit/$1');
+    $routes->post('update/(:num)', 'Products::update/$1');
+    $routes->get('delete/(:num)', 'Products::delete/$1', ['filter' => 'auth:admin']);
+    $routes->get('low-stock', 'Products::lowStock');
+});
 
 // Vendors routes
 $routes->get('/vendors', 'Vendors::index');
