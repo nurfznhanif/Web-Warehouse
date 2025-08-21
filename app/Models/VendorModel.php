@@ -45,46 +45,58 @@ class VendorModel extends Model
 
     public function getVendorsWithPurchaseCount($limit = null, $offset = null, $search = null)
     {
-        $builder = $this->db->table($this->table . ' v');
-        $builder->select('v.*, COUNT(p.id) as purchase_count, 
-                         SUM(CASE WHEN p.status = "pending" THEN 1 ELSE 0 END) as pending_purchases');
-        $builder->join('purchases p', 'v.id = p.vendor_id', 'left');
-
+        $sql = "
+            SELECT 
+                v.id, v.name, v.address, v.phone, v.email, v.created_at, v.updated_at,
+                COUNT(p.id) as purchase_count,
+                SUM(CASE WHEN p.status = 'pending' THEN 1 ELSE 0 END) as pending_purchases
+            FROM {$this->table} v 
+            LEFT JOIN purchases p ON v.id = p.vendor_id
+        ";
+        
+        $whereConditions = [];
+        $binds = [];
+        
         if ($search) {
-            $builder->groupStart()
-                ->like('v.name', $search)
-                ->orLike('v.address', $search)
-                ->orLike('v.phone', $search)
-                ->orLike('v.email', $search)
-                ->groupEnd();
+            $whereConditions[] = "(v.name LIKE ? OR v.address LIKE ? OR v.phone LIKE ? OR v.email LIKE ?)";
+            $searchParam = '%' . $search . '%';
+            $binds = array_merge($binds, [$searchParam, $searchParam, $searchParam, $searchParam]);
         }
-
-        $builder->groupBy('v.id, v.name, v.address, v.phone, v.email, v.created_at, v.updated_at');
-        $builder->orderBy('v.created_at', 'DESC');
-
+        
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(' AND ', $whereConditions);
+        }
+        
+        $sql .= " GROUP BY v.id, v.name, v.address, v.phone, v.email, v.created_at, v.updated_at";
+        $sql .= " ORDER BY v.created_at DESC";
+        
         if ($limit) {
-            $builder->limit($limit, $offset);
+            $sql .= " LIMIT " . $limit;
+            if ($offset) {
+                $sql .= " OFFSET " . $offset;
+            }
         }
-
-        return $builder->get()->getResultArray();
+        
+        return $this->db->query($sql, $binds)->getResultArray();
     }
 
     public function countVendorsWithPurchaseCount($search = null)
     {
-        $builder = $this->db->table($this->table . ' v');
-        $builder->join('purchases p', 'v.id = p.vendor_id', 'left');
-
+        $sql = "
+            SELECT COUNT(DISTINCT v.id) as total
+            FROM {$this->table} v 
+            LEFT JOIN purchases p ON v.id = p.vendor_id
+        ";
+        
+        $binds = [];
+        
         if ($search) {
-            $builder->groupStart()
-                ->like('v.name', $search)
-                ->orLike('v.address', $search)
-                ->orLike('v.phone', $search)
-                ->orLike('v.email', $search)
-                ->groupEnd();
+            $sql .= " WHERE (v.name LIKE ? OR v.address LIKE ? OR v.phone LIKE ? OR v.email LIKE ?)";
+            $searchParam = '%' . $search . '%';
+            $binds = [$searchParam, $searchParam, $searchParam, $searchParam];
         }
-
-        $builder->groupBy('v.id');
-        return $builder->countAllResults();
+        
+        return $this->db->query($sql, $binds)->getRow()->total;
     }
 
     public function getVendorWithPurchases($id)
@@ -124,25 +136,26 @@ class VendorModel extends Model
         // Total vendors
         $stats['total_vendors'] = $this->countAll();
 
-        // Vendors with purchases
-        $vendorsWithPurchases = $this->db->table($this->table . ' v')
-            ->join('purchases p', 'v.id = p.vendor_id')
-            ->groupBy('v.id')
-            ->countAllResults();
+        // Vendors with purchases - gunakan raw query yang aman
+        $vendorsWithPurchases = $this->db->query("
+            SELECT COUNT(DISTINCT v.id) as count 
+            FROM {$this->table} v 
+            INNER JOIN purchases p ON v.id = p.vendor_id
+        ")->getRow()->count;
         $stats['vendors_with_purchases'] = $vendorsWithPurchases;
 
         // Inactive vendors (no purchases)
         $stats['inactive_vendors'] = $stats['total_vendors'] - $vendorsWithPurchases;
 
-        // Top vendor by purchase amount
-        $topVendor = $this->db->table($this->table . ' v')
-            ->select('v.name, SUM(p.total_amount) as total_amount')
-            ->join('purchases p', 'v.id = p.vendor_id')
-            ->groupBy('v.id, v.name')
-            ->orderBy('total_amount', 'DESC')
-            ->limit(1)
-            ->get()
-            ->getRowArray();
+        // Top vendor by purchase amount - gunakan raw query yang aman
+        $topVendor = $this->db->query("
+            SELECT v.name, SUM(p.total_amount) as total_amount
+            FROM {$this->table} v 
+            INNER JOIN purchases p ON v.id = p.vendor_id
+            GROUP BY v.id, v.name
+            ORDER BY total_amount DESC
+            LIMIT 1
+        ")->getRowArray();
         $stats['top_vendor'] = $topVendor;
 
         return $stats;
@@ -150,18 +163,20 @@ class VendorModel extends Model
 
     public function getPurchasesByVendor($vendorId, $limit = null)
     {
-        $builder = $this->db->table('purchases p');
-        $builder->select('p.*, COUNT(pd.id) as item_count');
-        $builder->join('purchase_details pd', 'p.id = pd.purchase_id', 'left');
-        $builder->where('p.vendor_id', $vendorId);
-        $builder->groupBy('p.id');
-        $builder->orderBy('p.purchase_date', 'DESC');
-
+        $sql = "
+            SELECT p.*, COUNT(pd.id) as item_count
+            FROM purchases p
+            LEFT JOIN purchase_details pd ON p.id = pd.purchase_id
+            WHERE p.vendor_id = ?
+            GROUP BY p.id
+            ORDER BY p.purchase_date DESC
+        ";
+        
         if ($limit) {
-            $builder->limit($limit);
+            $sql .= " LIMIT " . $limit;
         }
-
-        return $builder->get()->getResultArray();
+        
+        return $this->db->query($sql, [$vendorId])->getResultArray();
     }
 
     public function getVendorsForSelect()
@@ -183,19 +198,22 @@ class VendorModel extends Model
 
     public function getVendorPerformanceReport()
     {
-        return $this->db->table($this->table . ' v')
-            ->select('v.id, v.name, v.address, v.phone, v.email,
-                                COUNT(p.id) as total_purchases,
-                                SUM(p.total_amount) as total_amount,
-                                AVG(p.total_amount) as avg_purchase_amount,
-                                MAX(p.purchase_date) as last_purchase_date,
-                                COUNT(CASE WHEN p.status = "pending" THEN 1 END) as pending_purchases,
-                                COUNT(CASE WHEN p.status = "received" THEN 1 END) as completed_purchases')
-            ->join('purchases p', 'v.id = p.vendor_id', 'left')
-            ->groupBy('v.id, v.name, v.address, v.phone, v.email')
-            ->orderBy('total_amount', 'DESC')
-            ->get()
-            ->getResultArray();
+        $sql = "
+            SELECT 
+                v.id, v.name, v.address, v.phone, v.email,
+                COUNT(p.id) as total_purchases,
+                COALESCE(SUM(p.total_amount), 0) as total_amount,
+                COALESCE(AVG(p.total_amount), 0) as avg_purchase_amount,
+                MAX(p.purchase_date) as last_purchase_date,
+                COUNT(CASE WHEN p.status = 'pending' THEN 1 END) as pending_purchases,
+                COUNT(CASE WHEN p.status = 'received' THEN 1 END) as completed_purchases
+            FROM {$this->table} v
+            LEFT JOIN purchases p ON v.id = p.vendor_id
+            GROUP BY v.id, v.name, v.address, v.phone, v.email
+            ORDER BY total_amount DESC
+        ";
+        
+        return $this->db->query($sql)->getResultArray();
     }
 
     public function beforeDelete(array $data)

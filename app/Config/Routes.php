@@ -45,6 +45,12 @@ $routes->group('products', ['filter' => 'auth'], function($routes) {
     $routes->get('low-stock', 'Products::lowStock');
 });
 
+// API routes untuk validasi
+$routes->group('api', function($routes) {
+    $routes->post('products/check-code', 'Products::checkCode');
+    $routes->post('categories/store', 'Categories::store');
+});
+
 // Vendors routes
 $routes->get('/vendors', 'Vendors::index');
 $routes->get('/vendors/create', 'Vendors::create');
