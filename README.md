@@ -1,68 +1,144 @@
-# CodeIgniter 4 Application Starter
+# 📦 Sistem Manajemen Gudang Sederhana
 
-## What is CodeIgniter?
+Aplikasi **Sistem Manajemen Gudang Sederhana** yang dibangun menggunakan **CodeIgniter 4**. Tujuan aplikasi ini adalah untuk mencatat keluar-masuk barang dan memantau stok barang yang tersedia di gudang.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## ✨ Fitur Utama
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+### 🔐 Autentikasi dan Keamanan
+- Sistem login dan filter akses
+- Manajemen pengguna
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+### 📊 Manajemen Data
+- CRUD Kategori Barang
+- CRUD Data Barang dengan validasi stok tidak minus
+- CRUD Pembelian (Purchase)
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+### 🔄 Transaksi
+- Barang Masuk (dari pembelian, update stok otomatis)
+- Barang Keluar (update stok otomatis)
 
-## Installation & updates
+### 📑 Laporan
+- Laporan Barang Masuk berdasarkan rentang tanggal
+- Laporan Barang Keluar berdasarkan rentang tanggal
+- Laporan Stok Barang terkini
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+### 📌 Dashboard
+- Ringkasan stok barang
+- Jumlah transaksi hari ini
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+## ⚙️ Teknologi
 
-## Setup
+- **Framework**: CodeIgniter 4
+- **Database**: MySQL
+- **Frontend**: Tailwind CSS
+- **Bahasa Pemrograman**: PHP 7.4+
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 🚀 Petunjuk Instalasi & Setup
 
-## Important Change with index.php
+### 🔧 Prasyarat
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+- PHP versi 7.4+
+- MySQL versi 5.7+
+- Composer
+- Web server (Apache/Nginx)
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+### 📝 Langkah-langkah Instalasi
 
-**Please** read the user guide for a better explanation of how CI4 works!
+1. **Clone atau download proyek**
+   ```bash
+   git clone <https://github.com/nurfznhanif/Web-Warehouse.git>
+   cd Web-Warehouse
+   ```
 
-## Repository Management
+2. **Install dependencies menggunakan Composer**
+   ```bash
+   composer install
+   ```
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+3. **Setup environment**
+   ```bash
+   cp env .env
+   ```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+4. **Edit file .env dan sesuaikan konfigurasi database**
+   ```ini
+   database.default.hostname = localhost
+   database.default.database = nama_database_anda
+   database.default.username = username_database_anda
+   database.default.password = password_database_anda
+   database.default.DBDriver = MySQLi
+   ```
 
-## Server Requirements
+5. **Buat database**
+   ```sql
+   CREATE DATABASE nama_database_anda;
+   ```
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+6. **Download dan import SQL dump**
+   
+   Download file SQL dump dari Google Drive:
+   [📁 Download SQL Dump](https://drive.google.com/drive/folders/11nlgrY59WidBzfk-HkGrvpDZQcGkuGcD?hl=id)
+   
+   Import ke database:
+   ```bash
+   mysql -u username_database_anda -p nama_database_anda < path/to/dump.sql
+   ```
+   
+   Atau melalui phpMyAdmin:
+   - Buka phpMyAdmin
+   - Pilih database yang sudah dibuat
+   - Tab "Import" → pilih file SQL → "Go"
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+7. **Jalankan aplikasi**
+   
+   Untuk development, gunakan built-in server CodeIgniter:
+   ```bash
+   php spark serve
+   ```
+   
+   Akses aplikasi di: http://localhost:8080
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+## 🔑 Login ke Aplikasi
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+- **Email**: admin@example.com
+- **Password**: password
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## 📘 Cara Penggunaan
+
+1. Login menggunakan kredensial yang disediakan
+2. Kelola **Kategori Barang** terlebih dahulu sebelum menambah barang
+3. Tambah **Barang** melalui menu Barang
+4. Buat **Pembelian** untuk mencatat pembelian barang dari vendor
+5. Catat **Barang Masuk** berdasarkan pembelian yang sudah dibuat
+6. Catat **Barang Keluar** untuk mengurangi stok
+7. Lihat **Laporan** untuk memantau aktivitas gudang
+
+## 🗄️ Struktur Database
+
+| Tabel | Deskripsi |
+|-------|-----------|
+| `categories` | Menyimpan kategori barang |
+| `products` | Menyimpan data barang |
+| `purchases` | Menyimpan data pembelian |
+| `purchase_items` | Menyimpan item dalam pembelian |
+| `incoming_items` | Menyimpan transaksi barang masuk |
+| `outgoing_items` | Menyimpan transaksi barang keluar |
+| `users` | Menyimpan data pengguna |
+
+## ⚡ Solusi Tantangan Teknis
+
+### ✅ Validasi Stok Tidak Boleh Minus
+**Tantangan**: Mencegah stok barang menjadi negatif saat transaksi barang keluar  
+**Solusi**: Validasi server-side & client-side + transaction handling di database
+
+### ✅ Integrasi Barang Masuk dengan Pembelian
+**Tantangan**: Memastikan barang masuk sesuai jumlah pembelian  
+**Solusi**: Relasi purchases ↔ incoming_items + validasi jumlah
+
+### ✅ Laporan Berdasarkan Rentang Tanggal
+**Tantangan**: Membuat filter efisien untuk rentang waktu tertentu  
+**Solusi**: Query builder CodeIgniter dengan kondisi BETWEEN pada timestamp
+
+### ✅ Keamanan & Autentikasi
+**Tantangan**: Melindungi rute yang butuh login  
+**Solusi**: Implementasi filters di CodeIgniter 4
