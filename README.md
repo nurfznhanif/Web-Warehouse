@@ -316,13 +316,13 @@ EXIT;
 # 5. Klik "Go"
 ```
 
-#### 6. Jalankan Aplikasi
+#### 5. Jalankan Aplikasi
 ```bash
 # Development server
 php spark serve
 ```
 
-#### 7. Login Default
+#### 6. Login Default
 ```
 Username: admin@example.com
 Password: password
