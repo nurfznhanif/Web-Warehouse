@@ -36,10 +36,10 @@ class IncomingItems extends BaseController
         $offset = ($currentPage - 1) * $perPage;
         $incomingItems = $this->incomingModel->getIncomingItemsWithDetails($perPage, $offset, $search, $startDate, $endDate);
         $totalItems = $this->incomingModel->countIncomingItemsWithDetails($search, $startDate, $endDate);
-        
+
         $pager = \Config\Services::pager();
         $pager->setPath('incoming-items');
-        
+
         $data = [
             'title' => 'Barang Masuk - Warehouse Management System',
             'incoming_items' => $incomingItems,
@@ -80,8 +80,8 @@ class IncomingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -107,7 +107,7 @@ class IncomingItems extends BaseController
     public function edit($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -127,7 +127,7 @@ class IncomingItems extends BaseController
     public function update($id)
     {
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -143,8 +143,8 @@ class IncomingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -174,7 +174,7 @@ class IncomingItems extends BaseController
         }
 
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -194,14 +194,14 @@ class IncomingItems extends BaseController
     public function getPurchaseItems($purchaseId)
     {
         $purchaseDetails = $this->purchaseDetailModel->getDetailsByPurchase($purchaseId);
-        
+
         // Get already received quantities for each product
         foreach ($purchaseDetails as &$detail) {
             $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $detail['product_id'])
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
-            
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
             $detail['received_quantity'] = $receivedQty;
             $detail['remaining_quantity'] = $detail['quantity'] - $receivedQty;
         }
@@ -251,7 +251,7 @@ class IncomingItems extends BaseController
         if ($result['success']) {
             // Check if purchase is fully received
             $this->checkPurchaseCompletion($purchaseId);
-            
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => count($incomingItems) . ' item berhasil diterima'
@@ -269,9 +269,9 @@ class IncomingItems extends BaseController
 
         foreach ($purchaseDetails as $detail) {
             $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $detail['product_id'])
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
 
             if ($receivedQty < $detail['quantity']) {
                 $fullyReceived = false;
@@ -303,9 +303,9 @@ class IncomingItems extends BaseController
     private function exportCSV($data, $startDate, $endDate)
     {
         $filename = 'incoming_items_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         $csv = "Tanggal,Kode Produk,Nama Produk,Kategori,Jumlah,Satuan,Vendor,User,Catatan\n";
-        
+
         foreach ($data as $item) {
             $csv .= '"' . date('d/m/Y H:i', strtotime($item['date'])) . '",';
             $csv .= '"' . $item['product_code'] . '",';
@@ -319,15 +319,15 @@ class IncomingItems extends BaseController
         }
 
         return $this->response
-                   ->setContentType('text/csv')
-                   ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                   ->setBody($csv);
+            ->setContentType('text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
     }
 
     private function exportJSON($data, $startDate, $endDate)
     {
         $filename = 'incoming_items_' . date('Y-m-d_H-i-s') . '.json';
-        
+
         $exportData = [
             'exported_at' => date('Y-m-d H:i:s'),
             'period' => [
@@ -339,15 +339,15 @@ class IncomingItems extends BaseController
         ];
 
         return $this->response
-                   ->setContentType('application/json')
-                   ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                   ->setBody(json_encode($exportData, JSON_PRETTY_PRINT));
+            ->setContentType('application/json')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody(json_encode($exportData, JSON_PRETTY_PRINT));
     }
 
     public function getStatistics()
     {
         $period = $this->request->getGet('period') ?? '30days';
-        
+
         $startDate = null;
         switch ($period) {
             case '7days':
@@ -360,30 +360,30 @@ class IncomingItems extends BaseController
                 $startDate = date('Y-m-d', strtotime('-90 days'));
                 break;
         }
-        
+
         $endDate = date('Y-m-d');
-        
+
         $statistics = [
             'total_transactions' => $this->incomingModel->countIncomingItemsWithDetails(null, $startDate, $endDate),
             'total_quantity' => $this->incomingModel->getIncomingByDate($startDate, $endDate),
             'top_products' => $this->incomingModel->getTopReceivedProducts(5, $startDate, $endDate),
             'daily_trend' => $this->incomingModel->getDailyIncomingData(30)
         ];
-        
+
         // Calculate total quantity
         $totalQty = 0;
         foreach ($statistics['total_quantity'] as $item) {
             $totalQty += $item['quantity'];
         }
         $statistics['total_quantity'] = $totalQty;
-        
+
         return $this->response->setJSON($statistics);
     }
 
     public function receiveFromPurchase($purchaseId)
     {
         $purchase = $this->purchaseModel->getPurchaseWithDetails($purchaseId);
-        
+
         if (!$purchase) {
             session()->setFlashdata('error', 'Data pembelian tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -423,23 +423,23 @@ class IncomingItems extends BaseController
         // If purchase_id is provided, validate against purchase quantity
         if ($purchaseId) {
             $purchaseDetail = $this->purchaseDetailModel->where('purchase_id', $purchaseId)
-                                                       ->where('product_id', $productId)
-                                                       ->first();
+                ->where('product_id', $productId)
+                ->first();
 
             if (!$purchaseDetail) {
                 return $this->response->setJSON(['valid' => false, 'message' => 'Produk tidak ditemukan dalam pembelian']);
             }
 
             $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
-                                              ->where('product_id', $productId)
-                                              ->selectSum('quantity')
-                                              ->first()['quantity'] ?? 0;
+                ->where('product_id', $productId)
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
 
             $remainingQty = $purchaseDetail['quantity'] - $receivedQty;
 
             if ($quantity > $remainingQty) {
                 return $this->response->setJSON([
-                    'valid' => false, 
+                    'valid' => false,
                     'message' => "Jumlah melebihi sisa yang belum diterima ({$remainingQty})"
                 ]);
             }
@@ -455,7 +455,7 @@ class IncomingItems extends BaseController
         }
 
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             return $this->response->setJSON(['found' => false]);
         }
@@ -469,7 +469,7 @@ class IncomingItems extends BaseController
     public function history($productId)
     {
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             session()->setFlashdata('error', 'Produk tidak ditemukan');
             return redirect()->to('/incoming-items');

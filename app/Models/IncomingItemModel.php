@@ -61,11 +61,11 @@ class IncomingItemModel extends Model
                                  purchases.id as purchase_number,
                                  vendors.name as vendor_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                       ->join('users', 'users.id = incoming_items.user_id');
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id');
 
         if ($search) {
             $builder->groupStart()
@@ -95,9 +95,9 @@ class IncomingItemModel extends Model
     public function countIncomingItemsWithDetails($search = null, $startDate = null, $endDate = null)
     {
         $builder = $this->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left');
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left');
 
         if ($search) {
             $builder->groupStart()
@@ -128,13 +128,13 @@ class IncomingItemModel extends Model
                              purchases.id as purchase_number,
                              vendors.name as vendor_name,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = incoming_items.product_id')
-                   ->join('categories', 'categories.id = products.category_id')
-                   ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                   ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                   ->join('users', 'users.id = incoming_items.user_id')
-                   ->where('incoming_items.id', $id)
-                   ->first();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id')
+            ->where('incoming_items.id', $id)
+            ->first();
     }
 
     public function getIncomingStatistics()
@@ -149,8 +149,8 @@ class IncomingItemModel extends Model
 
         // This month's incoming
         $stats['monthly_incoming'] = $this->where('YEAR(date)', date('Y'))
-                                        ->where('MONTH(date)', date('m'))
-                                        ->countAllResults(false);
+            ->where('MONTH(date)', date('m'))
+            ->countAllResults(false);
 
         // Total quantity received
         $totalQuantity = $this->selectSum('quantity')->first();
@@ -158,15 +158,15 @@ class IncomingItemModel extends Model
 
         // Most received product
         $mostReceived = $this->select('products.name, products.code, SUM(incoming_items.quantity) as total_quantity')
-                           ->join('products', 'products.id = incoming_items.product_id')
-                           ->groupBy('products.id, products.name, products.code')
-                           ->orderBy('total_quantity', 'DESC')
-                           ->first();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->groupBy('products.id, products.name, products.code')
+            ->orderBy('total_quantity', 'DESC')
+            ->first();
         $stats['most_received_product'] = $mostReceived;
 
         // Recent incoming (last 7 days)
         $stats['recent_incoming'] = $this->where('date >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                                        ->countAllResults(false);
+            ->countAllResults(false);
 
         return $stats;
     }
@@ -177,11 +177,11 @@ class IncomingItemModel extends Model
                              products.name as product_name, 
                              products.code as product_code,
                              products.unit')
-                   ->join('products', 'products.id = incoming_items.product_id')
-                   ->where('DATE(incoming_items.date) >=', $startDate)
-                   ->where('DATE(incoming_items.date) <=', $endDate)
-                   ->orderBy('incoming_items.date', 'DESC')
-                   ->findAll();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->where('DATE(incoming_items.date) >=', $startDate)
+            ->where('DATE(incoming_items.date) <=', $endDate)
+            ->orderBy('incoming_items.date', 'DESC')
+            ->findAll();
     }
 
     public function getIncomingByProduct($productId, $limit = null)
@@ -189,10 +189,10 @@ class IncomingItemModel extends Model
         $builder = $this->select('incoming_items.*, 
                                  purchases.id as purchase_number,
                                  vendors.name as vendor_name')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                       ->where('incoming_items.product_id', $productId)
-                       ->orderBy('incoming_items.date', 'DESC');
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->where('incoming_items.product_id', $productId)
+            ->orderBy('incoming_items.date', 'DESC');
 
         if ($limit) {
             $builder->limit($limit);
@@ -204,23 +204,23 @@ class IncomingItemModel extends Model
     public function getDailyIncomingData($days = 30)
     {
         $dailyData = [];
-        
+
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-{$i} days"));
             $dateLabel = date('M d', strtotime("-{$i} days"));
-            
+
             $count = $this->where('DATE(date)', $date)->countAllResults(false);
             $quantity = $this->where('DATE(date)', $date)
-                           ->selectSum('quantity')
-                           ->first()['quantity'] ?? 0;
-            
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
             $dailyData[] = [
                 'date' => $dateLabel,
                 'count' => $count,
                 'quantity' => $quantity
             ];
         }
-        
+
         return $dailyData;
     }
 
@@ -231,11 +231,11 @@ class IncomingItemModel extends Model
                              products.code as product_code,
                              products.unit,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = incoming_items.product_id')
-                   ->join('users', 'users.id = incoming_items.user_id')
-                   ->orderBy('incoming_items.created_at', 'DESC')
-                   ->limit($limit)
-                   ->findAll();
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('users', 'users.id = incoming_items.user_id')
+            ->orderBy('incoming_items.created_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function addIncomingItem($data)
@@ -247,8 +247,8 @@ class IncomingItemModel extends Model
             if (isset($data['purchase_id']) && $data['purchase_id']) {
                 $purchaseDetailModel = new PurchaseDetailModel();
                 $purchaseDetail = $purchaseDetailModel->where('purchase_id', $data['purchase_id'])
-                                                     ->where('product_id', $data['product_id'])
-                                                     ->first();
+                    ->where('product_id', $data['product_id'])
+                    ->first();
 
                 if (!$purchaseDetail) {
                     throw new \Exception('Produk tidak ditemukan dalam pembelian yang dipilih');
@@ -256,9 +256,9 @@ class IncomingItemModel extends Model
 
                 // Check if total received quantity doesn't exceed purchased quantity
                 $totalReceived = $this->where('purchase_id', $data['purchase_id'])
-                                     ->where('product_id', $data['product_id'])
-                                     ->selectSum('quantity')
-                                     ->first()['quantity'] ?? 0;
+                    ->where('product_id', $data['product_id'])
+                    ->selectSum('quantity')
+                    ->first()['quantity'] ?? 0;
 
                 if (($totalReceived + $data['quantity']) > $purchaseDetail['quantity']) {
                     throw new \Exception('Jumlah yang diterima melebihi jumlah pembelian');
@@ -273,7 +273,7 @@ class IncomingItemModel extends Model
             }
 
             // Update product stock (handled by database trigger)
-            
+
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
@@ -281,7 +281,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true, 'id' => $incomingId];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -312,11 +311,11 @@ class IncomingItemModel extends Model
                 $productModel = new ProductModel();
                 $product = $productModel->find($originalItem['product_id']);
                 $newStock = $product['stock'] + $stockAdjustment;
-                
+
                 if ($newStock < 0) {
                     throw new \Exception('Stok tidak boleh negatif');
                 }
-                
+
                 $productModel->update($originalItem['product_id'], ['stock' => $newStock]);
             }
 
@@ -327,7 +326,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -354,11 +352,11 @@ class IncomingItemModel extends Model
             $productModel = new ProductModel();
             $product = $productModel->find($item['product_id']);
             $newStock = $product['stock'] - $item['quantity'];
-            
+
             if ($newStock < 0) {
                 throw new \Exception('Penghapusan akan menyebabkan stok negatif');
             }
-            
+
             $productModel->update($item['product_id'], ['stock' => $newStock]);
 
             $this->db->transComplete();
@@ -368,7 +366,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -385,11 +382,11 @@ class IncomingItemModel extends Model
                                  purchases.id as purchase_number,
                                  vendors.name as vendor_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id')
-                       ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-                       ->join('users', 'users.id = incoming_items.user_id');
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id');
 
         if ($startDate) {
             $builder->where('DATE(incoming_items.date) >=', $startDate);
@@ -408,7 +405,7 @@ class IncomingItemModel extends Model
         }
 
         return $builder->orderBy('incoming_items.date', 'DESC')
-                      ->findAll();
+            ->findAll();
     }
 
     public function getIncomingSummary($startDate = null, $endDate = null)
@@ -419,8 +416,8 @@ class IncomingItemModel extends Model
                                  categories.name as category_name,
                                  SUM(incoming_items.quantity) as total_quantity,
                                  COUNT(incoming_items.id) as transaction_count')
-                       ->join('products', 'products.id = incoming_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id');
+            ->join('products', 'products.id = incoming_items.product_id')
+            ->join('categories', 'categories.id = products.category_id');
 
         if ($startDate) {
             $builder->where('DATE(incoming_items.date) >=', $startDate);
@@ -431,8 +428,8 @@ class IncomingItemModel extends Model
         }
 
         return $builder->groupBy('products.id, products.name, products.code, products.unit, categories.name')
-                      ->orderBy('total_quantity', 'DESC')
-                      ->findAll();
+            ->orderBy('total_quantity', 'DESC')
+            ->findAll();
     }
 
     public function getTopReceivedProducts($limit = 10, $startDate = null, $endDate = null)
@@ -443,7 +440,7 @@ class IncomingItemModel extends Model
                                  SUM(incoming_items.quantity) as total_quantity,
                                  COUNT(incoming_items.id) as transaction_count,
                                  MAX(incoming_items.date) as last_received')
-                       ->join('products', 'products.id = incoming_items.product_id');
+            ->join('products', 'products.id = incoming_items.product_id');
 
         if ($startDate) {
             $builder->where('DATE(incoming_items.date) >=', $startDate);
@@ -454,9 +451,9 @@ class IncomingItemModel extends Model
         }
 
         return $builder->groupBy('products.id, products.name, products.code, products.unit')
-                      ->orderBy('total_quantity', 'DESC')
-                      ->limit($limit)
-                      ->findAll();
+            ->orderBy('total_quantity', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function bulkInsert($items)
@@ -478,7 +475,6 @@ class IncomingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];

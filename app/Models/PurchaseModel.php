@@ -25,6 +25,7 @@ class PurchaseModel extends Model
         'purchase_date' => 'required|valid_date',
         'buyer_name' => 'required|min_length[3]|max_length[100]',
         'status' => 'permit_empty|in_list[pending,received,cancelled]',
+        'total_amount' => 'permit_empty|decimal',
         'notes' => 'permit_empty|max_length[1000]'
     ];
 
@@ -45,6 +46,9 @@ class PurchaseModel extends Model
         'status' => [
             'in_list' => 'Status tidak valid'
         ],
+        'total_amount' => [
+            'decimal' => 'Total amount harus berupa angka'
+        ],
         'notes' => [
             'max_length' => 'Catatan maksimal 1000 karakter'
         ]
@@ -52,26 +56,20 @@ class PurchaseModel extends Model
 
     public function getPurchasesWithDetails($limit = null, $offset = null, $search = null, $status = null)
     {
-        $builder = $this->select('purchases.*, vendors.name as vendor_name, vendors.address as vendor_address,
-                                 COUNT(pd.id) as item_count, 
-                                 COALESCE(SUM(pd.total), 0) as calculated_total')
-                       ->join('vendors', 'vendors.id = purchases.vendor_id')
-                       ->join('purchase_details pd', 'pd.purchase_id = purchases.id', 'left')
-                       ->groupBy('purchases.id, vendors.name, vendors.address');
+        $builder = $this->select('purchases.*, vendors.name as vendor_name')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->orderBy('purchases.created_at', 'DESC');
 
         if ($search) {
             $builder->groupStart()
                 ->like('vendors.name', $search)
                 ->orLike('purchases.buyer_name', $search)
-                ->orLike('purchases.id', $search)
                 ->groupEnd();
         }
 
-        if ($status && $status !== 'all') {
+        if ($status) {
             $builder->where('purchases.status', $status);
         }
-
-        $builder->orderBy('purchases.created_at', 'DESC');
 
         if ($limit) {
             $builder->limit($limit, $offset);
@@ -80,54 +78,24 @@ class PurchaseModel extends Model
         return $builder->findAll();
     }
 
-    public function countPurchasesWithDetails($search = null, $status = null)
+    public function getPurchasesWithItems()
     {
-        $builder = $this->join('vendors', 'vendors.id = purchases.vendor_id');
-
-        if ($search) {
-            $builder->groupStart()
-                ->like('vendors.name', $search)
-                ->orLike('purchases.buyer_name', $search)
-                ->orLike('purchases.id', $search)
-                ->groupEnd();
-        }
-
-        if ($status && $status !== 'all') {
-            $builder->where('purchases.status', $status);
-        }
-
-        return $builder->countAllResults();
-    }
-
-    public function getPurchaseWithDetails($id)
-    {
-        $purchase = $this->select('purchases.*, vendors.name as vendor_name, vendors.address as vendor_address,
-                                  vendors.phone as vendor_phone, vendors.email as vendor_email')
-                        ->join('vendors', 'vendors.id = purchases.vendor_id')
-                        ->where('purchases.id', $id)
-                        ->first();
-
-        if (!$purchase) {
-            return null;
-        }
-
-        // Get purchase details
-        $detailModel = new PurchaseDetailModel();
-        $purchase['details'] = $detailModel->getDetailsByPurchase($id);
-        $purchase['statistics'] = $detailModel->getPurchaseDetailStatistics($id);
-
-        return $purchase;
+        return $this->select('purchases.*, vendors.name as vendor_name, 
+                             COUNT(purchase_details.id) as item_count')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('purchase_details', 'purchase_details.purchase_id = purchases.id', 'left')
+            ->groupBy('purchases.id')
+            ->orderBy('purchases.created_at', 'DESC')
+            ->findAll();
     }
 
     public function calculateTotalAmount($purchaseId)
     {
-        $detailModel = new PurchaseDetailModel();
-        $total = $this->db->table('purchase_details')
-                         ->selectSum('total')
-                         ->where('purchase_id', $purchaseId)
-                         ->get()
-                         ->getRow()
-                         ->total ?? 0;
+        $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
+
+        $total = $purchaseDetailModel->where('purchase_id', $purchaseId)
+            ->selectSum('total')
+            ->first()['total'] ?? 0;
 
         return $this->update($purchaseId, ['total_amount' => $total]);
     }
@@ -157,14 +125,14 @@ class PurchaseModel extends Model
 
         // Recent purchases (last 30 days)
         $stats['recent_purchases'] = $this->where('purchase_date >=', date('Y-m-d', strtotime('-30 days')))
-                                         ->countAllResults(false);
+            ->countAllResults(false);
 
         // Top vendor by purchase count
         $topVendor = $this->select('vendors.name, COUNT(purchases.id) as purchase_count')
-                         ->join('vendors', 'vendors.id = purchases.vendor_id')
-                         ->groupBy('vendors.id, vendors.name')
-                         ->orderBy('purchase_count', 'DESC')
-                         ->first();
+            ->join('vendors', 'vendors.id = purchases.vendor_id')
+            ->groupBy('vendors.id, vendors.name')
+            ->orderBy('purchase_count', 'DESC')
+            ->first();
         $stats['top_vendor'] = $topVendor;
 
         return $stats;
@@ -173,20 +141,20 @@ class PurchaseModel extends Model
     public function getPurchasesByDate($startDate, $endDate)
     {
         return $this->select('purchases.*, vendors.name as vendor_name')
-                   ->join('vendors', 'vendors.id = purchases.vendor_id')
-                   ->where('purchase_date >=', $startDate)
-                   ->where('purchase_date <=', $endDate)
-                   ->orderBy('purchase_date', 'DESC')
-                   ->findAll();
+            ->join('vendors', 'vendors.id = purchases.vendor_id')
+            ->where('purchase_date >=', $startDate)
+            ->where('purchase_date <=', $endDate)
+            ->orderBy('purchase_date', 'DESC')
+            ->findAll();
     }
 
     public function getPurchasesByVendor($vendorId, $limit = null)
     {
-        $builder = $this->select('purchases.*, COUNT(pd.id) as item_count')
-                       ->join('purchase_details pd', 'pd.purchase_id = purchases.id', 'left')
-                       ->where('purchases.vendor_id', $vendorId)
-                       ->groupBy('purchases.id')
-                       ->orderBy('purchases.purchase_date', 'DESC');
+        $builder = $this->select('purchases.*, COUNT(purchase_details.id) as item_count')
+            ->join('purchase_details', 'purchase_details.purchase_id = purchases.id', 'left')
+            ->where('purchases.vendor_id', $vendorId)
+            ->groupBy('purchases.id')
+            ->orderBy('purchases.purchase_date', 'DESC');
 
         if ($limit) {
             $builder->limit($limit);
@@ -214,15 +182,15 @@ class PurchaseModel extends Model
         $monthlyData = [];
         for ($month = 1; $month <= 12; $month++) {
             $monthStr = str_pad($month, 2, '0', STR_PAD_LEFT);
-            
+
             $count = $this->where('YEAR(purchase_date)', $year)
-                         ->where('MONTH(purchase_date)', $month)
-                         ->countAllResults(false);
-            
+                ->where('MONTH(purchase_date)', $month)
+                ->countAllResults(false);
+
             $amount = $this->where('YEAR(purchase_date)', $year)
-                          ->where('MONTH(purchase_date)', $month)
-                          ->selectSum('total_amount')
-                          ->first()['total_amount'] ?? 0;
+                ->where('MONTH(purchase_date)', $month)
+                ->selectSum('total_amount')
+                ->first()['total_amount'] ?? 0;
 
             $monthlyData[] = [
                 'month' => date('M', mktime(0, 0, 0, $month, 1)),
@@ -237,10 +205,10 @@ class PurchaseModel extends Model
     public function getRecentPurchases($limit = 5)
     {
         return $this->select('purchases.*, vendors.name as vendor_name')
-                   ->join('vendors', 'vendors.id = purchases.vendor_id')
-                   ->orderBy('purchases.created_at', 'DESC')
-                   ->limit($limit)
-                   ->findAll();
+            ->join('vendors', 'vendors.id = purchases.vendor_id')
+            ->orderBy('purchases.created_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function duplicatePurchase($purchaseId)
@@ -260,24 +228,24 @@ class PurchaseModel extends Model
                 'purchase_date' => date('Y-m-d'),
                 'buyer_name' => $originalPurchase['buyer_name'],
                 'status' => 'pending',
-                'notes' => 'Duplikat dari Purchase #' . $purchaseId
+                'total_amount' => 0
             ];
 
             $newPurchaseId = $this->insert($newPurchaseData);
 
-            // Copy purchase details
-            $detailModel = new PurchaseDetailModel();
-            $originalDetails = $detailModel->where('purchase_id', $purchaseId)->findAll();
+            // Copy purchase items
+            $itemModel = new \App\Models\PurchaseDetailModel();
+            $originalItems = $itemModel->where('purchase_id', $purchaseId)->findAll();
 
-            foreach ($originalDetails as $detail) {
-                $newDetailData = [
+            foreach ($originalItems as $item) {
+                $newItemData = [
                     'purchase_id' => $newPurchaseId,
-                    'product_id' => $detail['product_id'],
-                    'quantity' => $detail['quantity'],
-                    'price' => $detail['price'],
-                    'total' => $detail['total']
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'total' => $item['total']
                 ];
-                $detailModel->insert($newDetailData);
+                $itemModel->insert($newItemData);
             }
 
             // Update total amount
@@ -290,7 +258,6 @@ class PurchaseModel extends Model
             }
 
             return ['success' => true, 'purchase_id' => $newPurchaseId];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -312,8 +279,9 @@ class PurchaseModel extends Model
                 throw new \Exception('Cannot delete received purchase');
             }
 
-            // Delete purchase details first
-            $this->db->table('purchase_details')->where('purchase_id', $purchaseId)->delete();
+            // Delete purchase items first
+            $itemModel = new \App\Models\PurchaseDetailModel();
+            $itemModel->where('purchase_id', $purchaseId)->delete();
 
             // Delete purchase
             $this->delete($purchaseId);
@@ -325,7 +293,6 @@ class PurchaseModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -335,16 +302,16 @@ class PurchaseModel extends Model
     public function beforeDelete(array $data)
     {
         $id = is_array($data['id']) ? $data['id'][0] : $data['id'];
-        
+
         // Check if purchase has incoming items
         $hasIncomingItems = $this->db->table('incoming_items')
-                                    ->where('purchase_id', $id)
-                                    ->countAllResults() > 0;
-        
+            ->where('purchase_id', $id)
+            ->countAllResults() > 0;
+
         if ($hasIncomingItems) {
             throw new \Exception('Tidak dapat menghapus pembelian yang sudah memiliki transaksi barang masuk!');
         }
-        
+
         return $data;
     }
 }

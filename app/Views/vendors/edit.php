@@ -17,21 +17,21 @@
 
     <!-- Success/Error Messages -->
     <?php if (session()->getFlashdata('success')): ?>
-    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-        <div class="flex items-center">
-            <i class="fas fa-check-circle mr-2"></i>
-            <?= session()->getFlashdata('success') ?>
+        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <?= session()->getFlashdata('success') ?>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('error')): ?>
-    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-        <div class="flex items-center">
-            <i class="fas fa-exclamation-circle mr-2"></i>
-            <?= session()->getFlashdata('error') ?>
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <?= session()->getFlashdata('error') ?>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <!-- Vendor Info Summary -->
@@ -43,10 +43,10 @@
             <div>
                 <h3 class="text-lg font-semibold text-blue-800"><?= esc($vendor['name']) ?></h3>
                 <p class="text-blue-600 text-sm">
-                    Vendor ID: #<?= $vendor['id'] ?> | 
+                    Vendor ID: #<?= $vendor['id'] ?> |
                     Terdaftar: <?= date('d F Y', strtotime($vendor['created_at'])) ?>
                     <?php if (isset($vendor['purchase_count'])): ?>
-                    | <?= $vendor['purchase_count'] ?> Transaksi Pembelian
+                        | <?= $vendor['purchase_count'] ?> Transaksi Pembelian
                     <?php endif; ?>
                 </p>
             </div>
@@ -72,21 +72,21 @@
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                         Nama Vendor <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" 
-                           id="name" 
-                           name="name" 
-                           value="<?= old('name', $vendor['name']) ?>"
-                           required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('name') ? 'border-red-500' : '' ?>"
-                           placeholder="Contoh: PT. Suplai Indonesia, CV. Mandiri Jaya, dll.">
-                    
+                    <input type="text"
+                        id="name"
+                        name="name"
+                        value="<?= old('name', $vendor['name']) ?>"
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('name') ? 'border-red-500' : '' ?>"
+                        placeholder="Contoh: PT. Suplai Indonesia, CV. Mandiri Jaya, dll.">
+
                     <?php if (isset($validation) && $validation->hasError('name')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('name') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('name') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Masukkan nama lengkap vendor atau perusahaan supplier</p>
                 </div>
 
@@ -95,19 +95,19 @@
                     <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
                         Alamat
                     </label>
-                    <textarea id="address" 
-                              name="address" 
-                              rows="4"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('address') ? 'border-red-500' : '' ?>"
-                              placeholder="Masukkan alamat lengkap vendor..."><?= old('address', $vendor['address']) ?></textarea>
-                    
+                    <textarea id="address"
+                        name="address"
+                        rows="4"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('address') ? 'border-red-500' : '' ?>"
+                        placeholder="Masukkan alamat lengkap vendor..."><?= old('address', $vendor['address']) ?></textarea>
+
                     <?php if (isset($validation) && $validation->hasError('address')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('address') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('address') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Alamat akan digunakan untuk pengiriman dan korespondensi</p>
                 </div>
 
@@ -120,21 +120,21 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-phone text-gray-400"></i>
                         </div>
-                        <input type="text" 
-                               id="phone" 
-                               name="phone" 
-                               value="<?= old('phone', $vendor['phone']) ?>"
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('phone') ? 'border-red-500' : '' ?>"
-                               placeholder="Contoh: 021-12345678, 0812-3456-7890">
+                        <input type="text"
+                            id="phone"
+                            name="phone"
+                            value="<?= old('phone', $vendor['phone']) ?>"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('phone') ? 'border-red-500' : '' ?>"
+                            placeholder="Contoh: 021-12345678, 0812-3456-7890">
                     </div>
-                    
+
                     <?php if (isset($validation) && $validation->hasError('phone')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('phone') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('phone') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Nomor telepon untuk komunikasi dan konfirmasi pesanan</p>
                 </div>
 
@@ -147,21 +147,21 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-envelope text-gray-400"></i>
                         </div>
-                        <input type="email" 
-                               id="email" 
-                               name="email" 
-                               value="<?= old('email', $vendor['email']) ?>"
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('email') ? 'border-red-500' : '' ?>"
-                               placeholder="contoh@vendor.com">
+                        <input type="email"
+                            id="email"
+                            name="email"
+                            value="<?= old('email', $vendor['email']) ?>"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent <?= isset($validation) && $validation->hasError('email') ? 'border-red-500' : '' ?>"
+                            placeholder="contoh@vendor.com">
                     </div>
-                    
+
                     <?php if (isset($validation) && $validation->hasError('email')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('email') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('email') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Email untuk komunikasi resmi dan pengiriman dokumen</p>
                 </div>
 
@@ -171,16 +171,16 @@
                         <i class="fas fa-info-circle mr-1"></i>
                         Field dengan tanda <span class="text-red-500">*</span> wajib diisi
                     </div>
-                    
+
                     <div class="flex space-x-3">
-                        <a href="<?= base_url('/vendors') ?>" 
-                           class="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center space-x-2">
+                        <a href="<?= base_url('/vendors') ?>"
+                            class="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center space-x-2">
                             <i class="fas fa-times"></i>
                             <span>Batal</span>
                         </a>
-                        
-                        <button type="submit" 
-                                class="px-6 py-3 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200 flex items-center space-x-2">
+
+                        <button type="submit"
+                            class="px-6 py-3 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200 flex items-center space-x-2">
                             <i class="fas fa-save"></i>
                             <span>Update Vendor</span>
                         </button>
@@ -192,21 +192,21 @@
 
     <!-- Additional Information Section -->
     <?php if (isset($vendor['purchase_count']) && $vendor['purchase_count'] > 0): ?>
-    <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <h4 class="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
-            <i class="fas fa-exclamation-triangle mr-2"></i>
-            Informasi Penting
-        </h4>
-        <div class="text-sm text-yellow-700">
-            <p class="mb-2">
-                Vendor ini memiliki <strong><?= $vendor['purchase_count'] ?> transaksi pembelian</strong> yang tercatat dalam sistem.
-            </p>
-            <p>
-                <i class="fas fa-shield-alt mr-1"></i>
-                Vendor dengan transaksi tidak dapat dihapus untuk menjaga integritas data.
-            </p>
+        <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Informasi Penting
+            </h4>
+            <div class="text-sm text-yellow-700">
+                <p class="mb-2">
+                    Vendor ini memiliki <strong><?= $vendor['purchase_count'] ?> transaksi pembelian</strong> yang tercatat dalam sistem.
+                </p>
+                <p>
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Vendor dengan transaksi tidak dapat dihapus untuk menjaga integritas data.
+                </p>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <!-- Change Log Section -->
@@ -239,7 +239,7 @@
     document.querySelector('form').addEventListener('submit', function(e) {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
-        
+
         // Check required fields
         if (!name) {
             e.preventDefault();
@@ -247,14 +247,14 @@
             document.getElementById('name').focus();
             return;
         }
-        
+
         if (name.length < 3) {
             e.preventDefault();
             alert('Nama vendor minimal 3 karakter!');
             document.getElementById('name').focus();
             return;
         }
-        
+
         // Validate email format if provided
         if (email && !isValidEmail(email)) {
             e.preventDefault();
@@ -262,7 +262,7 @@
             document.getElementById('email').focus();
             return;
         }
-        
+
         // Confirm update
         if (!confirm('Apakah Anda yakin ingin memperbarui informasi vendor ini?')) {
             e.preventDefault();
@@ -316,12 +316,12 @@
 
     function highlightChanges() {
         const fields = ['name', 'address', 'phone', 'email'];
-        
+
         fields.forEach(field => {
             const element = document.getElementById(field);
             const currentValue = element.value.trim();
             const originalValue = originalData[field] || '';
-            
+
             if (currentValue !== originalValue) {
                 element.classList.add('border-orange-300', 'bg-orange-50');
             } else {

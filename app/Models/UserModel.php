@@ -10,7 +10,7 @@ class UserModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'username',
-        'email', 
+        'email',
         'password',
         'full_name',
         'role',
@@ -70,9 +70,9 @@ class UserModel extends Model
     public function findByUsername($username)
     {
         return $this->where('username', $username)
-                   ->orWhere('email', $username)
-                   ->where('status', 'active')
-                   ->first();
+            ->orWhere('email', $username)
+            ->where('status', 'active')
+            ->first();
     }
 
     public function updateLastLogin($userId)
@@ -104,20 +104,20 @@ class UserModel extends Model
     public function getUserStatistics()
     {
         $stats = [];
-        
+
         // Total users
         $stats['total_users'] = $this->countAll();
-        
+
         // Active users
         $stats['active_users'] = $this->where('status', 'active')->countAllResults(false);
-        
+
         // Users by role
         $stats['admin_users'] = $this->where('role', 'admin')->countAllResults(false);
         $stats['operator_users'] = $this->where('role', 'operator')->countAllResults(false);
-        
+
         // Recent logins (last 30 days)
         $stats['recent_logins'] = $this->where('last_login >=', date('Y-m-d H:i:s', strtotime('-30 days')))
-                                      ->countAllResults(false);
+            ->countAllResults(false);
 
         return $stats;
     }
@@ -125,8 +125,8 @@ class UserModel extends Model
     public function getActiveUsers()
     {
         return $this->where('status', 'active')
-                   ->orderBy('full_name', 'ASC')
-                   ->findAll();
+            ->orderBy('full_name', 'ASC')
+            ->findAll();
     }
 
     public function changePassword($userId, $newPassword)
@@ -148,22 +148,22 @@ class UserModel extends Model
     public function isUsernameUnique($username, $excludeId = null)
     {
         $builder = $this->where('username', $username);
-        
+
         if ($excludeId) {
             $builder->where('id !=', $excludeId);
         }
-        
+
         return $builder->countAllResults() === 0;
     }
 
     public function isEmailUnique($email, $excludeId = null)
     {
         $builder = $this->where('email', $email);
-        
+
         if ($excludeId) {
             $builder->where('id !=', $excludeId);
         }
-        
+
         return $builder->countAllResults() === 0;
     }
 
@@ -172,8 +172,8 @@ class UserModel extends Model
         // This would require an activity log table
         // For now, we'll return login history
         return $this->select('last_login')
-                   ->where('id', $userId)
-                   ->first();
+            ->where('id', $userId)
+            ->first();
     }
 
     public function resetPassword($userId, $tempPassword = null)
@@ -181,7 +181,7 @@ class UserModel extends Model
         if (!$tempPassword) {
             $tempPassword = bin2hex(random_bytes(4)); // Generate 8 character temp password
         }
-        
+
         return $this->update($userId, ['password' => $tempPassword]);
     }
 }

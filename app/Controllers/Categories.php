@@ -16,7 +16,7 @@ class Categories extends BaseController
     public function index()
     {
         $data = [
-            'title' => 'Manajemen Kategori',
+            'title' => 'Kategori - Vadhana Warehouse',
             'categories' => $this->categoryModel->orderBy('created_at', 'DESC')->findAll()
         ];
 

@@ -30,10 +30,10 @@ class OutgoingItems extends BaseController
         $offset = ($currentPage - 1) * $perPage;
         $outgoingItems = $this->outgoingModel->getOutgoingItemsWithDetails($perPage, $offset, $search, $startDate, $endDate);
         $totalItems = $this->outgoingModel->countOutgoingItemsWithDetails($search, $startDate, $endDate);
-        
+
         $pager = \Config\Services::pager();
         $pager->setPath('outgoing-items');
-        
+
         $data = [
             'title' => 'Barang Keluar - Warehouse Management System',
             'outgoing_items' => $outgoingItems,
@@ -74,14 +74,14 @@ class OutgoingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         // Check stock availability
         $productId = $this->request->getPost('product_id');
         $quantity = $this->request->getPost('quantity');
-        
+
         $stockCheck = $this->productModel->checkStockAvailability($productId, $quantity);
         if (!$stockCheck['available']) {
             session()->setFlashdata('error', $stockCheck['message']);
@@ -111,7 +111,7 @@ class OutgoingItems extends BaseController
     public function edit($id)
     {
         $outgoingItem = $this->outgoingModel->getOutgoingItemWithDetails($id);
-        
+
         if (!$outgoingItem) {
             session()->setFlashdata('error', 'Data barang keluar tidak ditemukan');
             return redirect()->to('/outgoing-items');
@@ -131,7 +131,7 @@ class OutgoingItems extends BaseController
     public function update($id)
     {
         $outgoingItem = $this->outgoingModel->find($id);
-        
+
         if (!$outgoingItem) {
             session()->setFlashdata('error', 'Data barang keluar tidak ditemukan');
             return redirect()->to('/outgoing-items');
@@ -147,8 +147,8 @@ class OutgoingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -178,7 +178,7 @@ class OutgoingItems extends BaseController
         }
 
         $outgoingItem = $this->outgoingModel->find($id);
-        
+
         if (!$outgoingItem) {
             session()->setFlashdata('error', 'Data barang keluar tidak ditemukan');
             return redirect()->to('/outgoing-items');
@@ -209,7 +209,7 @@ class OutgoingItems extends BaseController
         }
 
         $stockCheck = $this->productModel->checkStockAvailability($productId, $quantity);
-        
+
         $product = $this->productModel->find($productId);
         $response = [
             'available' => $stockCheck['available'],
@@ -228,7 +228,7 @@ class OutgoingItems extends BaseController
         }
 
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             return $this->response->setJSON(['found' => false]);
         }
@@ -312,9 +312,9 @@ class OutgoingItems extends BaseController
     private function exportCSV($data, $startDate, $endDate)
     {
         $filename = 'outgoing_items_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         $csv = "Tanggal,Kode Produk,Nama Produk,Kategori,Jumlah,Satuan,Penerima,Deskripsi,User\n";
-        
+
         foreach ($data as $item) {
             $csv .= '"' . date('d/m/Y H:i', strtotime($item['date'])) . '",';
             $csv .= '"' . $item['product_code'] . '",';
@@ -328,15 +328,15 @@ class OutgoingItems extends BaseController
         }
 
         return $this->response
-                   ->setContentType('text/csv')
-                   ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                   ->setBody($csv);
+            ->setContentType('text/csv')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($csv);
     }
 
     private function exportJSON($data, $startDate, $endDate)
     {
         $filename = 'outgoing_items_' . date('Y-m-d_H-i-s') . '.json';
-        
+
         $exportData = [
             'exported_at' => date('Y-m-d H:i:s'),
             'period' => [
@@ -348,15 +348,15 @@ class OutgoingItems extends BaseController
         ];
 
         return $this->response
-                   ->setContentType('application/json')
-                   ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                   ->setBody(json_encode($exportData, JSON_PRETTY_PRINT));
+            ->setContentType('application/json')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody(json_encode($exportData, JSON_PRETTY_PRINT));
     }
 
     public function getStatistics()
     {
         $period = $this->request->getGet('period') ?? '30days';
-        
+
         $startDate = null;
         switch ($period) {
             case '7days':
@@ -369,9 +369,9 @@ class OutgoingItems extends BaseController
                 $startDate = date('Y-m-d', strtotime('-90 days'));
                 break;
         }
-        
+
         $endDate = date('Y-m-d');
-        
+
         $statistics = [
             'total_transactions' => $this->outgoingModel->countOutgoingItemsWithDetails(null, $startDate, $endDate),
             'total_quantity' => 0,
@@ -379,20 +379,20 @@ class OutgoingItems extends BaseController
             'top_recipients' => $this->outgoingModel->getTopRecipients(5, $startDate, $endDate),
             'daily_trend' => $this->outgoingModel->getDailyOutgoingData(30)
         ];
-        
+
         // Calculate total quantity
         $outgoingData = $this->outgoingModel->getOutgoingByDate($startDate, $endDate);
         foreach ($outgoingData as $item) {
             $statistics['total_quantity'] += $item['quantity'];
         }
-        
+
         return $this->response->setJSON($statistics);
     }
 
     public function history($productId)
     {
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             session()->setFlashdata('error', 'Produk tidak ditemukan');
             return redirect()->to('/outgoing-items');
@@ -419,8 +419,8 @@ class OutgoingItems extends BaseController
         $search = $this->request->getGet('search');
 
         $builder = $this->productModel->select('products.*, categories.name as category_name')
-                                     ->join('categories', 'categories.id = products.category_id')
-                                     ->where('products.stock >', 0);
+            ->join('categories', 'categories.id = products.category_id')
+            ->where('products.stock >', 0);
 
         if ($categoryId) {
             $builder->where('products.category_id', $categoryId);
@@ -428,14 +428,14 @@ class OutgoingItems extends BaseController
 
         if ($search) {
             $builder->groupStart()
-                   ->like('products.name', $search)
-                   ->orLike('products.code', $search)
-                   ->groupEnd();
+                ->like('products.name', $search)
+                ->orLike('products.code', $search)
+                ->groupEnd();
         }
 
         $products = $builder->orderBy('products.name', 'ASC')
-                           ->limit(20)
-                           ->findAll();
+            ->limit(20)
+            ->findAll();
 
         return $this->response->setJSON($products);
     }
@@ -456,14 +456,14 @@ class OutgoingItems extends BaseController
 
         // Calculate stock needed for the update
         $stockAdjustment = $quantity - $currentItem['quantity'];
-        
+
         if ($stockAdjustment > 0) {
             // Need more stock
             $product = $this->productModel->find($productId);
-            
+
             if ($product['stock'] < $stockAdjustment) {
                 return $this->response->setJSON([
-                    'valid' => false, 
+                    'valid' => false,
                     'message' => "Stok tidak mencukupi. Stok tersedia: {$product['stock']} {$product['unit']}"
                 ]);
             }

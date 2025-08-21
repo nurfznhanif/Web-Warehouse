@@ -33,7 +33,7 @@ $routes->post('/categories/update/(:num)', 'Categories::update/$1');
 $routes->get('/categories/delete/(:num)', 'Categories::delete/$1');
 
 // Products routes - dengan filter auth
-$routes->group('products', ['filter' => 'auth'], function($routes) {
+$routes->group('products', ['filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Products::index');
     $routes->get('index', 'Products::index');
     $routes->get('create', 'Products::create');
@@ -46,7 +46,7 @@ $routes->group('products', ['filter' => 'auth'], function($routes) {
 });
 
 // API routes untuk validasi
-$routes->group('api', function($routes) {
+$routes->group('api', function ($routes) {
     $routes->post('products/check-code', 'Products::checkCode');
     $routes->post('categories/store', 'Categories::store');
 });
@@ -60,10 +60,20 @@ $routes->post('/vendors/update/(:num)', 'Vendors::update/$1');
 $routes->get('/vendors/delete/(:num)', 'Vendors::delete/$1');
 
 // Purchases routes
-$routes->get('/purchases', 'Purchases::index');
-$routes->get('/purchases/create', 'Purchases::create');
-$routes->post('/purchases/store', 'Purchases::store');
-$routes->get('/purchases/view/(:num)', 'Purchases::view/$1');
+
+// Purchases routes - Lengkap
+$routes->group('purchases', ['filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'Purchases::index');
+    $routes->get('index', 'Purchases::index');
+    $routes->get('create', 'Purchases::create');
+    $routes->post('store', 'Purchases::store');
+    $routes->get('view/(:num)', 'Purchases::view/$1');
+    $routes->get('edit/(:num)', 'Purchases::edit/$1');
+    $routes->post('update/(:num)', 'Purchases::update/$1');
+    $routes->get('delete/(:num)', 'Purchases::delete/$1');
+    $routes->get('update-status/(:num)/(:alpha)', 'Purchases::updateStatus/$1/$2');
+    $routes->get('duplicate/(:num)', 'Purchases::duplicate/$1');
+});
 
 // Incoming items routes
 $routes->get('/incoming-items', 'IncomingItems::index');

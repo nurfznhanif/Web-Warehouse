@@ -54,11 +54,11 @@ class Dashboard extends BaseController
         // Product statistics
         $stats['total_products'] = $this->productModel->countAll();
         $stats['total_categories'] = $this->categoryModel->countAll();
-        
+
         // Get low stock and out of stock products
         $lowStockProducts = $this->getLowStockProducts();
         $outOfStockProducts = $this->getOutOfStockProducts();
-        
+
         $stats['low_stock_products'] = count($lowStockProducts);
         $stats['out_of_stock_products'] = count($outOfStockProducts);
 
@@ -66,7 +66,7 @@ class Dashboard extends BaseController
         $today = date('Y-m-d');
         $stats['today_incoming'] = $this->incomingModel->where('DATE(date)', $today)->countAllResults(false);
         $stats['today_outgoing'] = $this->outgoingModel->where('DATE(date)', $today)->countAllResults(false);
-        
+
         // Transaction statistics for this month
         $thisMonth = date('Y-m');
         $stats['monthly_incoming'] = $this->incomingModel->where('DATE_FORMAT(date, "%Y-%m")', $thisMonth)->countAllResults(false);
@@ -152,11 +152,11 @@ class Dashboard extends BaseController
             ->where('products.stock <=', 10)
             ->where('products.stock >', 0)
             ->orderBy('products.stock', 'ASC');
-        
+
         if ($limit) {
             $builder->limit($limit);
         }
-        
+
         return $builder->findAll();
     }
 
@@ -184,10 +184,10 @@ class Dashboard extends BaseController
                 for ($i = 6; $i >= 0; $i--) {
                     $date = date('Y-m-d', strtotime("-{$i} days"));
                     $label = date('M d', strtotime("-{$i} days"));
-                    
+
                     $incoming = $this->incomingModel->where('DATE(date)', $date)->countAllResults(false);
                     $outgoing = $this->outgoingModel->where('DATE(date)', $date)->countAllResults(false);
-                    
+
                     $data[] = [
                         'label' => $label,
                         'incoming' => $incoming,
@@ -200,10 +200,10 @@ class Dashboard extends BaseController
                 for ($i = 29; $i >= 0; $i--) {
                     $date = date('Y-m-d', strtotime("-{$i} days"));
                     $label = date('M d', strtotime("-{$i} days"));
-                    
+
                     $incoming = $this->incomingModel->where('DATE(date)', $date)->countAllResults(false);
                     $outgoing = $this->outgoingModel->where('DATE(date)', $date)->countAllResults(false);
-                    
+
                     $data[] = [
                         'label' => $label,
                         'incoming' => $incoming,
@@ -216,10 +216,10 @@ class Dashboard extends BaseController
                 for ($i = 11; $i >= 0; $i--) {
                     $month = date('Y-m', strtotime("-{$i} months"));
                     $label = date('M Y', strtotime("-{$i} months"));
-                    
+
                     $incoming = $this->incomingModel->where('DATE_FORMAT(date, "%Y-%m")', $month)->countAllResults(false);
                     $outgoing = $this->outgoingModel->where('DATE_FORMAT(date, "%Y-%m")', $month)->countAllResults(false);
-                    
+
                     $data[] = [
                         'label' => $label,
                         'incoming' => $incoming,
@@ -236,11 +236,11 @@ class Dashboard extends BaseController
     {
         $lowStockProducts = $this->getLowStockProducts();
         $outOfStockProducts = $this->getOutOfStockProducts();
-        
+
         $alertCount = count($lowStockProducts) + count($outOfStockProducts);
-        
+
         $alerts = [];
-        
+
         // Add out of stock alerts
         foreach ($outOfStockProducts as $product) {
             $alerts[] = [
@@ -249,7 +249,7 @@ class Dashboard extends BaseController
                 'product_id' => $product['id']
             ];
         }
-        
+
         // Add low stock alerts
         foreach ($lowStockProducts as $product) {
             $alerts[] = [
@@ -275,7 +275,7 @@ class Dashboard extends BaseController
             'pending_purchases' => $this->purchaseModel->where('status', 'pending')->countAllResults(false),
             'last_updated' => date('H:i:s')
         ];
-        
+
         return $this->response->setJSON($stats);
     }
 }

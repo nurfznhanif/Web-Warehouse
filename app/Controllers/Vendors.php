@@ -22,12 +22,12 @@ class Vendors extends BaseController
         $offset = ($currentPage - 1) * $perPage;
         $vendors = $this->vendorModel->getVendorsWithPurchaseCount($perPage, $offset, $search);
         $totalItems = $this->vendorModel->countVendorsWithPurchaseCount($search);
-        
+
         $pager = \Config\Services::pager();
         $pager->setPath('vendors');
-        
+
         $data = [
-            'title' => 'Manajemen Vendor - Warehouse Management System',
+            'title' => 'Vendor - Vadhana Warehouse',
             'vendors' => $vendors,
             'pager' => $pager->makeLinks($currentPage, $perPage, $totalItems),
             'search' => $search,
@@ -61,8 +61,8 @@ class Vendors extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -81,7 +81,7 @@ class Vendors extends BaseController
 
         try {
             $vendorId = $this->vendorModel->insert($data);
-            
+
             if ($vendorId) {
                 session()->setFlashdata('success', 'Vendor berhasil ditambahkan!');
                 return redirect()->to('/vendors');
@@ -98,7 +98,7 @@ class Vendors extends BaseController
     public function edit($id)
     {
         $vendor = $this->vendorModel->find($id);
-        
+
         if (!$vendor) {
             session()->setFlashdata('error', 'Vendor tidak ditemukan!');
             return redirect()->to('/vendors');
@@ -119,7 +119,7 @@ class Vendors extends BaseController
     public function update($id)
     {
         $vendor = $this->vendorModel->find($id);
-        
+
         if (!$vendor) {
             session()->setFlashdata('error', 'Vendor tidak ditemukan!');
             return redirect()->to('/vendors');
@@ -134,8 +134,8 @@ class Vendors extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -147,8 +147,8 @@ class Vendors extends BaseController
 
         // Check if vendor name already exists (excluding current vendor)
         $existingVendor = $this->vendorModel->where('name', $data['name'])
-                                          ->where('id !=', $id)
-                                          ->first();
+            ->where('id !=', $id)
+            ->first();
         if ($existingVendor) {
             session()->setFlashdata('error', 'Vendor dengan nama tersebut sudah ada!');
             return redirect()->back()->withInput();
@@ -156,7 +156,7 @@ class Vendors extends BaseController
 
         try {
             $result = $this->vendorModel->update($id, $data);
-            
+
             if ($result) {
                 session()->setFlashdata('success', 'Vendor berhasil diperbarui!');
                 return redirect()->to('/vendors');
@@ -173,7 +173,7 @@ class Vendors extends BaseController
     public function delete($id)
     {
         $vendor = $this->vendorModel->find($id);
-        
+
         if (!$vendor) {
             session()->setFlashdata('error', 'Vendor tidak ditemukan!');
             return redirect()->to('/vendors');
@@ -187,7 +187,7 @@ class Vendors extends BaseController
             }
 
             $result = $this->vendorModel->delete($id);
-            
+
             if ($result) {
                 session()->setFlashdata('success', 'Vendor "' . $vendor['name'] . '" berhasil dihapus!');
             } else {
@@ -203,7 +203,7 @@ class Vendors extends BaseController
     public function view($id)
     {
         $vendor = $this->vendorModel->getVendorWithPurchases($id);
-        
+
         if (!$vendor) {
             session()->setFlashdata('error', 'Vendor tidak ditemukan!');
             return redirect()->to('/vendors');
@@ -224,27 +224,27 @@ class Vendors extends BaseController
     public function search()
     {
         $keyword = $this->request->getGet('q');
-        
+
         if (empty($keyword)) {
             return $this->response->setJSON([]);
         }
 
         $vendors = $this->vendorModel->searchVendors($keyword);
-        
+
         return $this->response->setJSON($vendors);
     }
 
     public function getVendorsForSelect()
     {
         $vendors = $this->vendorModel->getVendorsForSelect();
-        
+
         return $this->response->setJSON($vendors);
     }
 
     public function performanceReport()
     {
         $report = $this->vendorModel->getVendorPerformanceReport();
-        
+
         $data = [
             'title' => 'Laporan Performa Vendor - Warehouse Management System',
             'vendors' => $report,
@@ -258,7 +258,7 @@ class Vendors extends BaseController
     {
         $format = $this->request->getGet('format') ?? 'excel';
         $vendors = $this->vendorModel->getVendorPerformanceReport();
-        
+
         if ($format === 'excel') {
             return $this->exportToExcel($vendors);
         } else if ($format === 'pdf') {
@@ -271,12 +271,12 @@ class Vendors extends BaseController
     private function exportToCSV($vendors)
     {
         $filename = 'vendor_report_' . date('Y-m-d') . '.csv';
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
+
         $output = fopen('php://output', 'w');
-        
+
         // CSV Headers
         fputcsv($output, [
             'ID',
@@ -291,7 +291,7 @@ class Vendors extends BaseController
             'Pending',
             'Selesai'
         ]);
-        
+
         // CSV Data
         foreach ($vendors as $vendor) {
             fputcsv($output, [
@@ -308,7 +308,7 @@ class Vendors extends BaseController
                 $vendor['completed_purchases']
             ]);
         }
-        
+
         fclose($output);
         exit;
     }
@@ -331,7 +331,7 @@ class Vendors extends BaseController
     {
         $action = $this->request->getPost('action');
         $vendorIds = $this->request->getPost('vendor_ids');
-        
+
         if (empty($vendorIds) || !is_array($vendorIds)) {
             session()->setFlashdata('error', 'Pilih vendor yang akan diproses!');
             return redirect()->back();
@@ -352,19 +352,19 @@ class Vendors extends BaseController
     {
         $deletedCount = 0;
         $errors = [];
-        
+
         foreach ($vendorIds as $id) {
             try {
                 $vendor = $this->vendorModel->find($id);
                 if (!$vendor) {
                     continue;
                 }
-                
+
                 if ($this->vendorModel->checkPurchaseExists($id)) {
                     $errors[] = "Vendor '{$vendor['name']}' memiliki transaksi dan tidak dapat dihapus";
                     continue;
                 }
-                
+
                 if ($this->vendorModel->delete($id)) {
                     $deletedCount++;
                 }
@@ -372,31 +372,31 @@ class Vendors extends BaseController
                 $errors[] = "Error menghapus vendor ID {$id}: " . $e->getMessage();
             }
         }
-        
+
         if ($deletedCount > 0) {
             session()->setFlashdata('success', "{$deletedCount} vendor berhasil dihapus!");
         }
-        
+
         if (!empty($errors)) {
             session()->setFlashdata('error', implode('<br>', $errors));
         }
-        
+
         return redirect()->back();
     }
 
     private function bulkExport($vendorIds)
     {
         $vendors = $this->vendorModel->whereIn('id', $vendorIds)->findAll();
-        
+
         $filename = 'vendors_export_' . date('Y-m-d') . '.csv';
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
+
         $output = fopen('php://output', 'w');
-        
+
         fputcsv($output, ['ID', 'Nama', 'Alamat', 'Telepon', 'Email', 'Dibuat', 'Diupdate']);
-        
+
         foreach ($vendors as $vendor) {
             fputcsv($output, [
                 $vendor['id'],
@@ -408,7 +408,7 @@ class Vendors extends BaseController
                 $vendor['updated_at']
             ]);
         }
-        
+
         fclose($output);
         exit;
     }

@@ -63,9 +63,9 @@ class OutgoingItemModel extends Model
                                  products.unit,
                                  categories.name as category_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = outgoing_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id')
-                       ->join('users', 'users.id = outgoing_items.user_id');
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('users', 'users.id = outgoing_items.user_id');
 
         if ($search) {
             $builder->groupStart()
@@ -96,7 +96,7 @@ class OutgoingItemModel extends Model
     public function countOutgoingItemsWithDetails($search = null, $startDate = null, $endDate = null)
     {
         $builder = $this->join('products', 'products.id = outgoing_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id');
+            ->join('categories', 'categories.id = products.category_id');
 
         if ($search) {
             $builder->groupStart()
@@ -127,11 +127,11 @@ class OutgoingItemModel extends Model
                              products.stock as current_stock,
                              categories.name as category_name,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = outgoing_items.product_id')
-                   ->join('categories', 'categories.id = products.category_id')
-                   ->join('users', 'users.id = outgoing_items.user_id')
-                   ->where('outgoing_items.id', $id)
-                   ->first();
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('users', 'users.id = outgoing_items.user_id')
+            ->where('outgoing_items.id', $id)
+            ->first();
     }
 
     public function getOutgoingStatistics()
@@ -146,8 +146,8 @@ class OutgoingItemModel extends Model
 
         // This month's outgoing
         $stats['monthly_outgoing'] = $this->where('YEAR(date)', date('Y'))
-                                        ->where('MONTH(date)', date('m'))
-                                        ->countAllResults(false);
+            ->where('MONTH(date)', date('m'))
+            ->countAllResults(false);
 
         // Total quantity issued
         $totalQuantity = $this->selectSum('quantity')->first();
@@ -155,15 +155,15 @@ class OutgoingItemModel extends Model
 
         // Most issued product
         $mostIssued = $this->select('products.name, products.code, SUM(outgoing_items.quantity) as total_quantity')
-                          ->join('products', 'products.id = outgoing_items.product_id')
-                          ->groupBy('products.id, products.name, products.code')
-                          ->orderBy('total_quantity', 'DESC')
-                          ->first();
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->groupBy('products.id, products.name, products.code')
+            ->orderBy('total_quantity', 'DESC')
+            ->first();
         $stats['most_issued_product'] = $mostIssued;
 
         // Recent outgoing (last 7 days)
         $stats['recent_outgoing'] = $this->where('date >=', date('Y-m-d H:i:s', strtotime('-7 days')))
-                                       ->countAllResults(false);
+            ->countAllResults(false);
 
         return $stats;
     }
@@ -174,17 +174,17 @@ class OutgoingItemModel extends Model
                              products.name as product_name, 
                              products.code as product_code,
                              products.unit')
-                   ->join('products', 'products.id = outgoing_items.product_id')
-                   ->where('DATE(outgoing_items.date) >=', $startDate)
-                   ->where('DATE(outgoing_items.date) <=', $endDate)
-                   ->orderBy('outgoing_items.date', 'DESC')
-                   ->findAll();
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->where('DATE(outgoing_items.date) >=', $startDate)
+            ->where('DATE(outgoing_items.date) <=', $endDate)
+            ->orderBy('outgoing_items.date', 'DESC')
+            ->findAll();
     }
 
     public function getOutgoingByProduct($productId, $limit = null)
     {
         $builder = $this->where('product_id', $productId)
-                       ->orderBy('date', 'DESC');
+            ->orderBy('date', 'DESC');
 
         if ($limit) {
             $builder->limit($limit);
@@ -196,23 +196,23 @@ class OutgoingItemModel extends Model
     public function getDailyOutgoingData($days = 30)
     {
         $dailyData = [];
-        
+
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-{$i} days"));
             $dateLabel = date('M d', strtotime("-{$i} days"));
-            
+
             $count = $this->where('DATE(date)', $date)->countAllResults(false);
             $quantity = $this->where('DATE(date)', $date)
-                           ->selectSum('quantity')
-                           ->first()['quantity'] ?? 0;
-            
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
             $dailyData[] = [
                 'date' => $dateLabel,
                 'count' => $count,
                 'quantity' => $quantity
             ];
         }
-        
+
         return $dailyData;
     }
 
@@ -223,11 +223,11 @@ class OutgoingItemModel extends Model
                              products.code as product_code,
                              products.unit,
                              users.full_name as user_name')
-                   ->join('products', 'products.id = outgoing_items.product_id')
-                   ->join('users', 'users.id = outgoing_items.user_id')
-                   ->orderBy('outgoing_items.created_at', 'DESC')
-                   ->limit($limit)
-                   ->findAll();
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('users', 'users.id = outgoing_items.user_id')
+            ->orderBy('outgoing_items.created_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function addOutgoingItem($data)
@@ -238,7 +238,7 @@ class OutgoingItemModel extends Model
             // Check stock availability
             $productModel = new ProductModel();
             $product = $productModel->find($data['product_id']);
-            
+
             if (!$product) {
                 throw new \Exception('Produk tidak ditemukan');
             }
@@ -255,7 +255,7 @@ class OutgoingItemModel extends Model
             }
 
             // Update product stock (handled by database trigger)
-            
+
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
@@ -263,7 +263,6 @@ class OutgoingItemModel extends Model
             }
 
             return ['success' => true, 'id' => $outgoingId];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -283,12 +282,12 @@ class OutgoingItemModel extends Model
 
             // Check stock availability for the adjustment
             $stockAdjustment = $data['quantity'] - $originalItem['quantity'];
-            
+
             if ($stockAdjustment > 0) {
                 // Need more stock
                 $productModel = new ProductModel();
                 $product = $productModel->find($originalItem['product_id']);
-                
+
                 if ($product['stock'] < $stockAdjustment) {
                     throw new \Exception('Stok tidak mencukupi untuk perubahan ini');
                 }
@@ -304,11 +303,11 @@ class OutgoingItemModel extends Model
                 $productModel = new ProductModel();
                 $product = $productModel->find($originalItem['product_id']);
                 $newStock = $product['stock'] - $stockAdjustment; // Subtract because it's outgoing
-                
+
                 if ($newStock < 0) {
                     throw new \Exception('Stok tidak boleh negatif');
                 }
-                
+
                 $productModel->update($originalItem['product_id'], ['stock' => $newStock]);
             }
 
@@ -319,7 +318,6 @@ class OutgoingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -346,7 +344,7 @@ class OutgoingItemModel extends Model
             $productModel = new ProductModel();
             $product = $productModel->find($item['product_id']);
             $newStock = $product['stock'] + $item['quantity'];
-            
+
             $productModel->update($item['product_id'], ['stock' => $newStock]);
 
             $this->db->transComplete();
@@ -356,7 +354,6 @@ class OutgoingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -371,9 +368,9 @@ class OutgoingItemModel extends Model
                                  products.unit,
                                  categories.name as category_name,
                                  users.full_name as user_name')
-                       ->join('products', 'products.id = outgoing_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id')
-                       ->join('users', 'users.id = outgoing_items.user_id');
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('users', 'users.id = outgoing_items.user_id');
 
         if ($startDate) {
             $builder->where('DATE(outgoing_items.date) >=', $startDate);
@@ -392,7 +389,7 @@ class OutgoingItemModel extends Model
         }
 
         return $builder->orderBy('outgoing_items.date', 'DESC')
-                      ->findAll();
+            ->findAll();
     }
 
     public function getOutgoingSummary($startDate = null, $endDate = null)
@@ -403,8 +400,8 @@ class OutgoingItemModel extends Model
                                  categories.name as category_name,
                                  SUM(outgoing_items.quantity) as total_quantity,
                                  COUNT(outgoing_items.id) as transaction_count')
-                       ->join('products', 'products.id = outgoing_items.product_id')
-                       ->join('categories', 'categories.id = products.category_id');
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('categories', 'categories.id = products.category_id');
 
         if ($startDate) {
             $builder->where('DATE(outgoing_items.date) >=', $startDate);
@@ -415,8 +412,8 @@ class OutgoingItemModel extends Model
         }
 
         return $builder->groupBy('products.id, products.name, products.code, products.unit, categories.name')
-                      ->orderBy('total_quantity', 'DESC')
-                      ->findAll();
+            ->orderBy('total_quantity', 'DESC')
+            ->findAll();
     }
 
     public function getTopIssuedProducts($limit = 10, $startDate = null, $endDate = null)
@@ -427,7 +424,7 @@ class OutgoingItemModel extends Model
                                  SUM(outgoing_items.quantity) as total_quantity,
                                  COUNT(outgoing_items.id) as transaction_count,
                                  MAX(outgoing_items.date) as last_issued')
-                       ->join('products', 'products.id = outgoing_items.product_id');
+            ->join('products', 'products.id = outgoing_items.product_id');
 
         if ($startDate) {
             $builder->where('DATE(outgoing_items.date) >=', $startDate);
@@ -438,9 +435,9 @@ class OutgoingItemModel extends Model
         }
 
         return $builder->groupBy('products.id, products.name, products.code, products.unit')
-                      ->orderBy('total_quantity', 'DESC')
-                      ->limit($limit)
-                      ->findAll();
+            ->orderBy('total_quantity', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function getTopRecipients($limit = 10, $startDate = null, $endDate = null)
@@ -449,8 +446,8 @@ class OutgoingItemModel extends Model
                                  COUNT(id) as transaction_count,
                                  SUM(quantity) as total_quantity,
                                  MAX(date) as last_transaction')
-                       ->where('recipient IS NOT NULL')
-                       ->where('recipient !=', '');
+            ->where('recipient IS NOT NULL')
+            ->where('recipient !=', '');
 
         if ($startDate) {
             $builder->where('DATE(date) >=', $startDate);
@@ -461,9 +458,9 @@ class OutgoingItemModel extends Model
         }
 
         return $builder->groupBy('recipient')
-                      ->orderBy('transaction_count', 'DESC')
-                      ->limit($limit)
-                      ->findAll();
+            ->orderBy('transaction_count', 'DESC')
+            ->limit($limit)
+            ->findAll();
     }
 
     public function bulkInsert($items)
@@ -485,7 +482,6 @@ class OutgoingItemModel extends Model
             }
 
             return ['success' => true];
-
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -495,25 +491,25 @@ class OutgoingItemModel extends Model
     public function getMonthlyComparison($months = 12)
     {
         $monthlyData = [];
-        
+
         for ($i = $months - 1; $i >= 0; $i--) {
             $month = date('Y-m', strtotime("-{$i} months"));
             $monthLabel = date('M Y', strtotime("-{$i} months"));
-            
+
             $count = $this->where('DATE_FORMAT(date, "%Y-%m")', $month)
-                         ->countAllResults(false);
-            
+                ->countAllResults(false);
+
             $quantity = $this->where('DATE_FORMAT(date, "%Y-%m")', $month)
-                           ->selectSum('quantity')
-                           ->first()['quantity'] ?? 0;
-            
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
             $monthlyData[] = [
                 'month' => $monthLabel,
                 'count' => $count,
                 'quantity' => $quantity
             ];
         }
-        
+
         return $monthlyData;
     }
 }

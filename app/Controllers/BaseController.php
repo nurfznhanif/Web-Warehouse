@@ -15,7 +15,7 @@ class BaseController extends Controller
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        
+
         $this->session = \Config\Services::session();
         // Hapus pengecekan auth di sini karena sudah ditangani oleh filter
     }

@@ -53,30 +53,30 @@ class VendorModel extends Model
             FROM {$this->table} v 
             LEFT JOIN purchases p ON v.id = p.vendor_id
         ";
-        
+
         $whereConditions = [];
         $binds = [];
-        
+
         if ($search) {
             $whereConditions[] = "(v.name LIKE ? OR v.address LIKE ? OR v.phone LIKE ? OR v.email LIKE ?)";
             $searchParam = '%' . $search . '%';
             $binds = array_merge($binds, [$searchParam, $searchParam, $searchParam, $searchParam]);
         }
-        
+
         if (!empty($whereConditions)) {
             $sql .= " WHERE " . implode(' AND ', $whereConditions);
         }
-        
+
         $sql .= " GROUP BY v.id, v.name, v.address, v.phone, v.email, v.created_at, v.updated_at";
         $sql .= " ORDER BY v.created_at DESC";
-        
+
         if ($limit) {
             $sql .= " LIMIT " . $limit;
             if ($offset) {
                 $sql .= " OFFSET " . $offset;
             }
         }
-        
+
         return $this->db->query($sql, $binds)->getResultArray();
     }
 
@@ -87,15 +87,15 @@ class VendorModel extends Model
             FROM {$this->table} v 
             LEFT JOIN purchases p ON v.id = p.vendor_id
         ";
-        
+
         $binds = [];
-        
+
         if ($search) {
             $sql .= " WHERE (v.name LIKE ? OR v.address LIKE ? OR v.phone LIKE ? OR v.email LIKE ?)";
             $searchParam = '%' . $search . '%';
             $binds = [$searchParam, $searchParam, $searchParam, $searchParam];
         }
-        
+
         return $this->db->query($sql, $binds)->getRow()->total;
     }
 
@@ -171,11 +171,11 @@ class VendorModel extends Model
             GROUP BY p.id
             ORDER BY p.purchase_date DESC
         ";
-        
+
         if ($limit) {
             $sql .= " LIMIT " . $limit;
         }
-        
+
         return $this->db->query($sql, [$vendorId])->getResultArray();
     }
 
@@ -212,7 +212,7 @@ class VendorModel extends Model
             GROUP BY v.id, v.name, v.address, v.phone, v.email
             ORDER BY total_amount DESC
         ";
-        
+
         return $this->db->query($sql)->getResultArray();
     }
 

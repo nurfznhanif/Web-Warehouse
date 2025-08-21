@@ -1,252 +1,289 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-
-<!-- Header -->
-<div class="bg-white shadow-sm border-b border-gray-200 mb-6">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="py-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Manajemen Pembelian</h1>
-                    <p class="mt-1 text-sm text-gray-500">Kelola data pembelian barang dari vendor</p>
-                </div>
-                <div class="flex space-x-3">
-                    <a href="<?= base_url('/purchases/create') ?>" 
-                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Tambah Pembelian
-                    </a>
-                </div>
+<div class="container mx-auto px-6 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Daftar Pembelian</h1>
+                <p class="text-gray-600 mt-1">Kelola semua pesanan pembelian</p>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Filter & Search -->
-<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Pencarian</label>
-            <input type="text" id="search" name="search" 
-                   value="<?= esc($search ?? '') ?>"
-                   placeholder="Cari nama vendor, pembeli..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        
-        <div>
-            <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
-            <input type="date" id="start_date" name="start_date" 
-                   value="<?= esc($start_date ?? '') ?>"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        
-        <div>
-            <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Selesai</label>
-            <input type="date" id="end_date" name="end_date" 
-                   value="<?= esc($end_date ?? '') ?>"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        
-        <div class="flex items-end space-x-2">
-            <button type="submit" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
-                <i class="fas fa-search mr-2"></i>Filter
-            </button>
-            <a href="<?= base_url('/purchases') ?>" 
-               class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
-                Reset
+            <a href="<?= base_url('/purchases/create') ?>"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Tambah Pembelian
             </a>
         </div>
-    </form>
-</div>
+    </div>
 
-<!-- Statistik -->
-<?php if (isset($statistics)): ?>
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-blue-100 rounded-full">
-                <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+    <!-- Alert Messages -->
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6" role="alert">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span><?= session()->getFlashdata('success') ?></span>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Pembelian</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_purchases'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-green-100 rounded-full">
-                <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Nilai</p>
-                <p class="text-2xl font-bold text-green-600">Rp <?= number_format($statistics['total_amount'] ?? 0, 0, ',', '.') ?></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-yellow-100 rounded-full">
-                <i class="fas fa-clock text-yellow-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Pending</p>
-                <p class="text-2xl font-bold text-yellow-600"><?= number_format($statistics['pending_purchases'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-purple-100 rounded-full">
-                <i class="fas fa-truck text-purple-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Vendor</p>
-                <p class="text-2xl font-bold text-purple-600"><?= number_format($statistics['total_vendors'] ?? 0) ?></p>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-<!-- Tabel Pembelian -->
-<div class="bg-white rounded-lg shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-900">Daftar Pembelian</h2>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pembeli</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Nilai</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <?php if (!empty($purchases)): ?>
-                    <?php foreach ($purchases as $index => $purchase): ?>
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= ($current_page - 1) * $per_page + $index + 1 ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= date('d/m/Y', strtotime($purchase['purchase_date'])) ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900"><?= esc($purchase['vendor_name']) ?></div>
-                                <div class="text-sm text-gray-500"><?= esc(substr($purchase['vendor_address'], 0, 50)) ?>...</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= esc($purchase['buyer_name']) ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    <?= $purchase['total_items'] ?? 0 ?> item
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                Rp <?= number_format($purchase['total_amount'] ?? 0, 0, ',', '.') ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <?php
-                                $status = $purchase['status'] ?? 'pending';
-                                $statusClass = match($status) {
-                                    'received' => 'bg-green-100 text-green-800',
-                                    'cancelled' => 'bg-red-100 text-red-800',
-                                    default => 'bg-yellow-100 text-yellow-800'
-                                };
-                                $statusText = match($status) {
-                                    'received' => 'Diterima',
-                                    'cancelled' => 'Dibatalkan',
-                                    default => 'Pending'
-                                };
-                                ?>
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?= $statusClass ?>">
-                                    <?= $statusText ?>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex space-x-2">
-                                    <a href="<?= base_url('/purchases/view/' . $purchase['id']) ?>" 
-                                       class="text-blue-600 hover:text-blue-900 transition-colors" 
-                                       title="Lihat Detail">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="<?= base_url('/purchases/edit/' . $purchase['id']) ?>" 
-                                       class="text-yellow-600 hover:text-yellow-900 transition-colors" 
-                                       title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <?php if (session()->get('role') === 'admin'): ?>
-                                        <button onclick="deletePurchase(<?= $purchase['id'] ?>, '<?= esc($purchase['vendor_name']) ?>')" 
-                                                class="text-red-600 hover:text-red-900 transition-colors" 
-                                                title="Hapus">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
-                            <div class="flex flex-col items-center py-8">
-                                <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-4"></i>
-                                <p class="text-lg font-medium">Belum ada data pembelian</p>
-                                <p class="text-sm">Tambah pembelian pertama dengan mengklik tombol di atas</p>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Pagination -->
-    <?php if (isset($pager)): ?>
-        <div class="px-6 py-3 border-t border-gray-200">
-            <?= $pager ?>
         </div>
     <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span><?= session()->getFlashdata('error') ?></span>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Filter & Search -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <form action="<?= base_url('/purchases') ?>" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Pencarian</label>
+                <input type="text" name="search" id="search"
+                    value="<?= esc(request()->getGet('search')) ?>"
+                    placeholder="Cari vendor, pembeli..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" id="status"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Semua Status</option>
+                    <option value="pending" <?= request()->getGet('status') === 'pending' ? 'selected' : '' ?>>Pending</option>
+                    <option value="received" <?= request()->getGet('status') === 'received' ? 'selected' : '' ?>>Received</option>
+                    <option value="cancelled" <?= request()->getGet('status') === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">Dari Tanggal</label>
+                <input type="date" name="date_from" id="date_from"
+                    value="<?= esc(request()->getGet('date_from')) ?>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="flex items-end space-x-2">
+                <div class="flex-1">
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">Sampai Tanggal</label>
+                    <input type="date" name="date_to" id="date_to"
+                        value="<?= esc(request()->getGet('date_to')) ?>"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="<?= base_url('/purchases') ?>" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Pembelian</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= count($purchases ?? []) ?></p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <i class="fas fa-shopping-cart text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                    <p class="text-2xl font-bold text-yellow-600">
+                        <?= count(array_filter($purchases ?? [], function ($p) {
+                            return $p['status'] === 'pending';
+                        })) ?>
+                    </p>
+                </div>
+                <div class="bg-yellow-100 p-3 rounded-full">
+                    <i class="fas fa-clock text-yellow-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Received</p>
+                    <p class="text-2xl font-bold text-green-600">
+                        <?= count(array_filter($purchases ?? [], function ($p) {
+                            return $p['status'] === 'received';
+                        })) ?>
+                    </p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <i class="fas fa-check text-green-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Nilai</p>
+                    <p class="text-lg font-bold text-gray-900">
+                        Rp <?= number_format(array_sum(array_column($purchases ?? [], 'total_amount')), 0, ',', '.') ?>
+                    </p>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <i class="fas fa-money-bill text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <?php if (!empty($purchases)): ?>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pembeli</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($purchases as $purchase): ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    #<?= str_pad($purchase['id'], 4, '0', STR_PAD_LEFT) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <?= esc($purchase['vendor_name'] ?? 'N/A') ?>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?= date('d/m/Y', strtotime($purchase['purchase_date'])) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?= esc($purchase['buyer_name']) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    Rp <?= number_format($purchase['total_amount'], 0, ',', '.') ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <?php
+                                    $statusClass = '';
+                                    $statusText = '';
+                                    switch ($purchase['status']) {
+                                        case 'pending':
+                                            $statusClass = 'bg-yellow-100 text-yellow-800';
+                                            $statusText = 'Pending';
+                                            break;
+                                        case 'received':
+                                            $statusClass = 'bg-green-100 text-green-800';
+                                            $statusText = 'Received';
+                                            break;
+                                        case 'cancelled':
+                                            $statusClass = 'bg-red-100 text-red-800';
+                                            $statusText = 'Cancelled';
+                                            break;
+                                    }
+                                    ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $statusClass ?>">
+                                        <?= $statusText ?>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <a href="<?= base_url('/purchases/view/' . $purchase['id']) ?>"
+                                            class="text-blue-600 hover:text-blue-900 p-1" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <?php if ($purchase['status'] === 'pending'): ?>
+                                            <a href="<?= base_url('/purchases/edit/' . $purchase['id']) ?>"
+                                                class="text-green-600 hover:text-green-900 p-1" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+
+                                            <button onclick="deletePurchase(<?= $purchase['id'] ?>)"
+                                                class="text-red-600 hover:text-red-900 p-1" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="text-center py-16">
+                <i class="fas fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada data pembelian</h3>
+                <p class="text-gray-500 mb-6">Mulai dengan membuat pesanan pembelian pertama Anda</p>
+                <a href="<?= base_url('/purchases/create') ?>"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Tambah Pembelian
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Hapus</h3>
+            </div>
+            <p class="text-gray-500 mb-6">Apakah Anda yakin ingin menghapus pembelian ini? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="flex justify-end space-x-4">
+                <button onclick="closeDeleteModal()"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                    Batal
+                </button>
+                <button id="confirmDelete"
+                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Hapus
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-function deletePurchase(id, vendorName) {
-    if (confirm(`Apakah Anda yakin ingin menghapus pembelian dari vendor "${vendorName}"?\n\nTindakan ini tidak dapat dibatalkan.`)) {
-        window.location.href = `<?= base_url('/purchases/delete/') ?>${id}`;
-    }
-}
+    let deleteId = null;
 
-// Auto refresh setiap 30 detik
-setInterval(function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('search') && !urlParams.has('start_date') && !urlParams.has('end_date')) {
-        location.reload();
+    function deletePurchase(id) {
+        deleteId = id;
+        document.getElementById('deleteModal').classList.remove('hidden');
     }
-}, 30000);
 
-// Real-time search
-let searchTimeout;
-document.getElementById('search').addEventListener('input', function(e) {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(function() {
-        const form = e.target.closest('form');
-        if (e.target.value.length >= 3 || e.target.value.length === 0) {
-            form.submit();
+    function closeDeleteModal() {
+        deleteId = null;
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (deleteId) {
+            window.location.href = '<?= base_url('/purchases/delete/') ?>' + deleteId;
         }
-    }, 500);
-});
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
 </script>
 <?= $this->endSection() ?>

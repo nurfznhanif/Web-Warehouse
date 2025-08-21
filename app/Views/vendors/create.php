@@ -17,21 +17,21 @@
 
     <!-- Success/Error Messages -->
     <?php if (session()->getFlashdata('success')): ?>
-    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-        <div class="flex items-center">
-            <i class="fas fa-check-circle mr-2"></i>
-            <?= session()->getFlashdata('success') ?>
+        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <?= session()->getFlashdata('success') ?>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('error')): ?>
-    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-        <div class="flex items-center">
-            <i class="fas fa-exclamation-circle mr-2"></i>
-            <?= session()->getFlashdata('error') ?>
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <?= session()->getFlashdata('error') ?>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <!-- Main Form Card -->
@@ -53,21 +53,21 @@
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                         Nama Vendor <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" 
-                           id="name" 
-                           name="name" 
-                           value="<?= old('name') ?>"
-                           required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent <?= isset($validation) && $validation->hasError('name') ? 'border-red-500' : '' ?>"
-                           placeholder="Contoh: PT. Suplai Indonesia, CV. Mandiri Jaya, dll.">
-                    
+                    <input type="text"
+                        id="name"
+                        name="name"
+                        value="<?= old('name') ?>"
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent <?= isset($validation) && $validation->hasError('name') ? 'border-red-500' : '' ?>"
+                        placeholder="Contoh: PT. Suplai Indonesia, CV. Mandiri Jaya, dll.">
+
                     <?php if (isset($validation) && $validation->hasError('phone')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('phone') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('phone') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Nomor telepon untuk komunikasi dan konfirmasi pesanan</p>
                 </div>
 
@@ -80,21 +80,21 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-envelope text-gray-400"></i>
                         </div>
-                        <input type="email" 
-                               id="email" 
-                               name="email" 
-                               value="<?= old('email') ?>"
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent <?= isset($validation) && $validation->hasError('email') ? 'border-red-500' : '' ?>"
-                               placeholder="contoh@vendor.com">
+                        <input type="email"
+                            id="email"
+                            name="email"
+                            value="<?= old('email') ?>"
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent <?= isset($validation) && $validation->hasError('email') ? 'border-red-500' : '' ?>"
+                            placeholder="contoh@vendor.com">
                     </div>
-                    
+
                     <?php if (isset($validation) && $validation->hasError('email')): ?>
-                    <p class="text-red-500 text-sm mt-1">
-                        <i class="fas fa-exclamation-circle mr-1"></i>
-                        <?= $validation->getError('email') ?>
-                    </p>
+                        <p class="text-red-500 text-sm mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <?= $validation->getError('email') ?>
+                        </p>
                     <?php endif; ?>
-                    
+
                     <p class="text-gray-500 text-sm mt-1">Email untuk komunikasi resmi dan pengiriman dokumen</p>
                 </div>
 
@@ -104,16 +104,16 @@
                         <i class="fas fa-info-circle mr-1"></i>
                         Field dengan tanda <span class="text-red-500">*</span> wajib diisi
                     </div>
-                    
+
                     <div class="flex space-x-3">
-                        <a href="<?= base_url('/vendors') ?>" 
-                           class="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center space-x-2">
+                        <a href="<?= base_url('/vendors') ?>"
+                            class="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center space-x-2">
                             <i class="fas fa-times"></i>
                             <span>Batal</span>
                         </a>
-                        
-                        <button type="submit" 
-                                class="px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2">
+
+                        <button type="submit"
+                            class="px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2">
                             <i class="fas fa-save"></i>
                             <span>Simpan Vendor</span>
                         </button>
@@ -161,7 +161,7 @@
     document.querySelector('form').addEventListener('submit', function(e) {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
-        
+
         // Check required fields
         if (!name) {
             e.preventDefault();
@@ -169,14 +169,14 @@
             document.getElementById('name').focus();
             return;
         }
-        
+
         if (name.length < 3) {
             e.preventDefault();
             alert('Nama vendor minimal 3 karakter!');
             document.getElementById('name').focus();
             return;
         }
-        
+
         // Validate email format if provided
         if (email && !isValidEmail(email)) {
             e.preventDefault();
