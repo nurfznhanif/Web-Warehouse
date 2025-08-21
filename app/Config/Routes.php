@@ -149,6 +149,7 @@ $routes->get('/outgoing/create', 'OutgoingItems::create');
 $routes->post('/outgoing/store', 'OutgoingItems::store');
 
 // Reports routes
+$routes->get('/reports', 'Reports::index');
 $routes->get('/reports/incoming', 'Reports::incoming');
 $routes->get('/reports/outgoing', 'Reports::outgoing');
 $routes->get('/reports/stock', 'Reports::stock');
