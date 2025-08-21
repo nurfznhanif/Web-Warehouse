@@ -10,10 +10,10 @@ class OutgoingItemModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'product_id',
+        'purchase_id',
         'date',
         'quantity',
-        'description',
-        'recipient',
+        'notes',
         'user_id'
     ];
     protected $useTimestamps = true;
@@ -22,10 +22,10 @@ class OutgoingItemModel extends Model
 
     protected $validationRules = [
         'product_id' => 'required|integer',
+        'purchase_id' => 'permit_empty|integer',
         'date' => 'required|valid_date',
         'quantity' => 'required|decimal|greater_than[0]',
-        'description' => 'permit_empty|max_length[500]',
-        'recipient' => 'permit_empty|max_length[100]',
+        'notes' => 'permit_empty|max_length[500]',
         'user_id' => 'required|integer'
     ];
 
@@ -33,6 +33,9 @@ class OutgoingItemModel extends Model
         'product_id' => [
             'required' => 'Produk harus dipilih',
             'integer' => 'Produk tidak valid'
+        ],
+        'purchase_id' => [
+            'integer' => 'Purchase ID tidak valid'
         ],
         'date' => [
             'required' => 'Tanggal harus diisi',
@@ -43,11 +46,8 @@ class OutgoingItemModel extends Model
             'decimal' => 'Jumlah harus berupa angka',
             'greater_than' => 'Jumlah harus lebih dari 0'
         ],
-        'description' => [
-            'max_length' => 'Deskripsi maksimal 500 karakter'
-        ],
-        'recipient' => [
-            'max_length' => 'Penerima maksimal 100 karakter'
+        'notes' => [
+            'max_length' => 'Catatan maksimal 500 karakter'
         ],
         'user_id' => [
             'required' => 'User ID harus diisi',
