@@ -19,6 +19,10 @@ class OutgoingItems extends BaseController
         $this->categoryModel = new CategoryModel();
     }
 
+    // ========================================
+    // CRUD OPERATIONS
+    // ========================================
+
     public function index()
     {
         $perPage = 20;
@@ -35,7 +39,7 @@ class OutgoingItems extends BaseController
         $pager->setPath('outgoing-items');
 
         $data = [
-            'title' => 'Barang Keluar - Warehouse Management System',
+            'title' => 'Barang Keluar - Vadhana Warehouse',
             'outgoing_items' => $outgoingItems,
             'pager' => $pager->makeLinks($currentPage, $perPage, $totalItems),
             'search' => $search,
@@ -47,23 +51,24 @@ class OutgoingItems extends BaseController
             'statistics' => $this->outgoingModel->getOutgoingStatistics()
         ];
 
-        return view('layouts/main', $data) . view('outgoing_items/index', $data);
+        return view('outgoing_items/index', $data);
     }
 
     public function create()
     {
         $data = [
-            'title' => 'Tambah Barang Keluar - Warehouse Management System',
+            'title' => 'Tambah Barang Keluar - Vadhana Warehouse',
             'products' => $this->productModel->getProductsWithCategory(),
             'categories' => $this->categoryModel->findAll(),
             'validation' => session()->getFlashdata('validation')
         ];
 
-        return view('layouts/main', $data) . view('outgoing_items/create', $data);
+        return view('outgoing_items/create', $data);
     }
 
     public function store()
     {
+        // Validation rules
         $rules = [
             'product_id' => 'required|integer',
             'date' => 'required|valid_date',
@@ -78,16 +83,18 @@ class OutgoingItems extends BaseController
                 ->with('validation', $this->validator);
         }
 
-        // Check stock availability
+        // Get form data
         $productId = $this->request->getPost('product_id');
         $quantity = $this->request->getPost('quantity');
 
+        // Check stock availability
         $stockCheck = $this->productModel->checkStockAvailability($productId, $quantity);
         if (!$stockCheck['available']) {
             session()->setFlashdata('error', $stockCheck['message']);
             return redirect()->back()->withInput();
         }
 
+        // Prepare data
         $data = [
             'product_id' => $productId,
             'date' => $this->request->getPost('date') . ' ' . date('H:i:s'),
@@ -97,6 +104,7 @@ class OutgoingItems extends BaseController
             'user_id' => session()->get('user_id')
         ];
 
+        // Save data
         $result = $this->outgoingModel->addOutgoingItem($data);
 
         if ($result['success']) {
@@ -118,25 +126,19 @@ class OutgoingItems extends BaseController
         }
 
         $data = [
-            'title' => 'Edit Barang Keluar - Warehouse Management System',
+            'title' => 'Edit Barang Keluar - Vadhana Warehouse',
             'outgoing_item' => $outgoingItem,
             'products' => $this->productModel->getProductsWithCategory(),
             'categories' => $this->categoryModel->findAll(),
             'validation' => session()->getFlashdata('validation')
         ];
 
-        return view('layouts/main', $data) . view('outgoing_items/edit', $data);
+        return view('outgoing_items/edit', $data);
     }
 
     public function update($id)
     {
-        $outgoingItem = $this->outgoingModel->find($id);
-
-        if (!$outgoingItem) {
-            session()->setFlashdata('error', 'Data barang keluar tidak ditemukan');
-            return redirect()->to('/outgoing-items');
-        }
-
+        // Validation rules
         $rules = [
             'product_id' => 'required|integer',
             'date' => 'required|valid_date',
@@ -151,18 +153,21 @@ class OutgoingItems extends BaseController
                 ->with('validation', $this->validator);
         }
 
+        // Prepare data
         $data = [
             'product_id' => $this->request->getPost('product_id'),
-            'date' => $this->request->getPost('date') . ' ' . date('H:i:s', strtotime($outgoingItem['date'])),
+            'date' => $this->request->getPost('date') . ' ' . date('H:i:s'),
             'quantity' => $this->request->getPost('quantity'),
             'description' => $this->request->getPost('description'),
-            'recipient' => $this->request->getPost('recipient')
+            'recipient' => $this->request->getPost('recipient'),
+            'user_id' => session()->get('user_id')
         ];
 
+        // Update data
         $result = $this->outgoingModel->updateOutgoingItem($id, $data);
 
         if ($result['success']) {
-            session()->setFlashdata('success', 'Data barang keluar berhasil diperbarui');
+            session()->setFlashdata('success', 'Data barang keluar berhasil diupdate dan stok produk telah disesuaikan');
             return redirect()->to('/outgoing-items');
         } else {
             session()->setFlashdata('error', $result['message']);
@@ -172,27 +177,63 @@ class OutgoingItems extends BaseController
 
     public function delete($id)
     {
-        if (!$this->isAdmin()) {
-            session()->setFlashdata('error', 'Hanya admin yang dapat menghapus data barang keluar');
-            return redirect()->to('/outgoing-items');
-        }
-
-        $outgoingItem = $this->outgoingModel->find($id);
-
-        if (!$outgoingItem) {
-            session()->setFlashdata('error', 'Data barang keluar tidak ditemukan');
-            return redirect()->to('/outgoing-items');
-        }
-
         $result = $this->outgoingModel->deleteOutgoingItem($id);
 
         if ($result['success']) {
-            session()->setFlashdata('success', 'Data barang keluar berhasil dihapus dan stok produk telah disesuaikan');
+            session()->setFlashdata('success', 'Data barang keluar berhasil dihapus dan stok produk telah dikembalikan');
         } else {
             session()->setFlashdata('error', $result['message']);
         }
 
         return redirect()->to('/outgoing-items');
+    }
+
+    public function history($productId)
+    {
+        $product = $this->productModel->getProductWithCategory($productId);
+
+        if (!$product) {
+            session()->setFlashdata('error', 'Produk tidak ditemukan');
+            return redirect()->to('/outgoing-items');
+        }
+
+        $history = $this->outgoingModel->getOutgoingByProduct($productId, 50);
+
+        $data = [
+            'title' => 'Riwayat Barang Keluar: ' . $product['name'],
+            'product' => $product,
+            'history' => $history
+        ];
+
+        return view('outgoing_items/history', $data);
+    }
+
+    // ========================================
+    // AJAX ENDPOINTS
+    // ========================================
+
+    public function getProductInfo($productId)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/outgoing-items');
+        }
+
+        $product = $this->productModel->getProductWithCategory($productId);
+
+        if (!$product) {
+            return $this->response->setJSON(['found' => false]);
+        }
+
+        $response = [
+            'found' => true,
+            'stock' => $product['stock'] ?? 0,
+            'unit' => $product['unit'] ?? '',
+            'min_stock' => $product['min_stock'] ?? 0,
+            'name' => $product['name'],
+            'code' => $product['code']
+        ];
+
+        return $this->response->setJSON($response);
     }
 
     public function checkStock()
@@ -205,12 +246,15 @@ class OutgoingItems extends BaseController
         $quantity = $this->request->getPost('quantity');
 
         if (!$productId || !$quantity) {
-            return $this->response->setJSON(['available' => false, 'message' => 'Data tidak lengkap']);
+            return $this->response->setJSON([
+                'available' => false,
+                'message' => 'Data tidak lengkap'
+            ]);
         }
 
         $stockCheck = $this->productModel->checkStockAvailability($productId, $quantity);
-
         $product = $this->productModel->find($productId);
+
         $response = [
             'available' => $stockCheck['available'],
             'message' => $stockCheck['message'],
@@ -242,6 +286,76 @@ class OutgoingItems extends BaseController
             'code' => $product['code']
         ]);
     }
+
+    public function getAvailableProducts()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/outgoing-items');
+        }
+
+        $categoryId = $this->request->getGet('category_id');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->productModel->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id')
+            ->where('products.stock >', 0);
+
+        if ($categoryId) {
+            $builder->where('products.category_id', $categoryId);
+        }
+
+        if ($search) {
+            $builder->groupStart()
+                ->like('products.name', $search)
+                ->orLike('products.code', $search)
+                ->groupEnd();
+        }
+
+        $products = $builder->orderBy('products.name', 'ASC')
+            ->limit(20)
+            ->findAll();
+
+        return $this->response->setJSON($products);
+    }
+
+    public function validateStockBeforeUpdate($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['valid' => false]);
+        }
+
+        $quantity = $this->request->getPost('quantity');
+        $productId = $this->request->getPost('product_id');
+
+        $currentItem = $this->outgoingModel->find($id);
+        if (!$currentItem) {
+            return $this->response->setJSON([
+                'valid' => false,
+                'message' => 'Item tidak ditemukan'
+            ]);
+        }
+
+        // Calculate stock needed for the update
+        $stockAdjustment = $quantity - $currentItem['quantity'];
+
+        if ($stockAdjustment > 0) {
+            // Need more stock
+            $product = $this->productModel->find($productId);
+
+            if ($product['stock'] < $stockAdjustment) {
+                return $this->response->setJSON([
+                    'valid' => false,
+                    'message' => "Stok tidak mencukupi. Stok tersedia: {$product['stock']} {$product['unit']}"
+                ]);
+            }
+        }
+
+        return $this->response->setJSON(['valid' => true]);
+    }
+
+    // ========================================
+    // BULK OPERATIONS
+    // ========================================
 
     public function bulkIssue()
     {
@@ -294,81 +408,20 @@ class OutgoingItems extends BaseController
         }
     }
 
-    public function export()
-    {
-        $startDate = $this->request->getGet('start_date');
-        $endDate = $this->request->getGet('end_date');
-        $format = $this->request->getGet('format') ?? 'csv';
-
-        $outgoingItems = $this->outgoingModel->getOutgoingReport($startDate, $endDate);
-
-        if ($format === 'csv') {
-            return $this->exportCSV($outgoingItems, $startDate, $endDate);
-        } else {
-            return $this->exportJSON($outgoingItems, $startDate, $endDate);
-        }
-    }
-
-    private function exportCSV($data, $startDate, $endDate)
-    {
-        $filename = 'outgoing_items_' . date('Y-m-d_H-i-s') . '.csv';
-
-        $csv = "Tanggal,Kode Produk,Nama Produk,Kategori,Jumlah,Satuan,Penerima,Deskripsi,User\n";
-
-        foreach ($data as $item) {
-            $csv .= '"' . date('d/m/Y H:i', strtotime($item['date'])) . '",';
-            $csv .= '"' . $item['product_code'] . '",';
-            $csv .= '"' . $item['product_name'] . '",';
-            $csv .= '"' . $item['category_name'] . '",';
-            $csv .= '"' . $item['quantity'] . '",';
-            $csv .= '"' . $item['unit'] . '",';
-            $csv .= '"' . ($item['recipient'] ?? '') . '",';
-            $csv .= '"' . ($item['description'] ?? '') . '",';
-            $csv .= '"' . $item['user_name'] . '"' . "\n";
-        }
-
-        return $this->response
-            ->setContentType('text/csv')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody($csv);
-    }
-
-    private function exportJSON($data, $startDate, $endDate)
-    {
-        $filename = 'outgoing_items_' . date('Y-m-d_H-i-s') . '.json';
-
-        $exportData = [
-            'exported_at' => date('Y-m-d H:i:s'),
-            'period' => [
-                'start_date' => $startDate,
-                'end_date' => $endDate
-            ],
-            'total_records' => count($data),
-            'data' => $data
-        ];
-
-        return $this->response
-            ->setContentType('application/json')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody(json_encode($exportData, JSON_PRETTY_PRINT));
-    }
+    // ========================================
+    // REPORTING & STATISTICS
+    // ========================================
 
     public function getStatistics()
     {
         $period = $this->request->getGet('period') ?? '30days';
 
-        $startDate = null;
-        switch ($period) {
-            case '7days':
-                $startDate = date('Y-m-d', strtotime('-7 days'));
-                break;
-            case '30days':
-                $startDate = date('Y-m-d', strtotime('-30 days'));
-                break;
-            case '90days':
-                $startDate = date('Y-m-d', strtotime('-90 days'));
-                break;
-        }
+        $startDate = match ($period) {
+            '7days' => date('Y-m-d', strtotime('-7 days')),
+            '30days' => date('Y-m-d', strtotime('-30 days')),
+            '90days' => date('Y-m-d', strtotime('-90 days')),
+            default => date('Y-m-d', strtotime('-30 days'))
+        };
 
         $endDate = date('Y-m-d');
 
@@ -389,86 +442,88 @@ class OutgoingItems extends BaseController
         return $this->response->setJSON($statistics);
     }
 
-    public function history($productId)
-    {
-        $product = $this->productModel->getProductWithCategory($productId);
+    // ========================================
+    // EXPORT FUNCTIONS
+    // ========================================
 
-        if (!$product) {
-            session()->setFlashdata('error', 'Produk tidak ditemukan');
-            return redirect()->to('/outgoing-items');
+    public function export()
+    {
+        $startDate = $this->request->getGet('start_date');
+        $endDate = $this->request->getGet('end_date');
+        $format = $this->request->getGet('format') ?? 'csv';
+
+        $outgoingItems = $this->outgoingModel->getOutgoingItemsWithDetails(null, null, null, $startDate, $endDate);
+
+        return match ($format) {
+            'csv' => $this->exportToCSV($outgoingItems, $startDate, $endDate),
+            'json' => $this->exportToJSON($outgoingItems, $startDate, $endDate),
+            default => $this->exportToCSV($outgoingItems, $startDate, $endDate)
+        };
+    }
+
+    private function exportToCSV($data, $startDate = null, $endDate = null)
+    {
+        $filename = 'barang_keluar_' . date('Y-m-d_H-i-s') . '.csv';
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+
+        // Add BOM for UTF-8
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        // Header
+        fputcsv($output, [
+            'No',
+            'Tanggal',
+            'Kode Produk',
+            'Nama Produk',
+            'Kategori',
+            'Jumlah',
+            'Satuan',
+            'Penerima',
+            'Keterangan',
+            'User'
+        ]);
+
+        // Data
+        foreach ($data as $index => $item) {
+            fputcsv($output, [
+                $index + 1,
+                date('d/m/Y H:i', strtotime($item['date'])),
+                $item['product_code'],
+                $item['product_name'],
+                $item['category_name'],
+                $item['quantity'],
+                $item['unit'],
+                $item['recipient'] ?: '-',
+                $item['description'] ?: '-',
+                $item['user_name'] ?? 'System'
+            ]);
         }
 
-        $history = $this->outgoingModel->getOutgoingByProduct($productId, 50);
+        fclose($output);
+        exit;
+    }
 
-        $data = [
-            'title' => 'Riwayat Barang Keluar - ' . $product['name'],
-            'product' => $product,
-            'history' => $history
+    private function exportToJSON($data, $startDate = null, $endDate = null)
+    {
+        $filename = 'barang_keluar_' . date('Y-m-d_H-i-s') . '.json';
+
+        $exportData = [
+            'exported_at' => date('Y-m-d H:i:s'),
+            'period' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ],
+            'total_records' => count($data),
+            'data' => $data
         ];
 
-        return view('layouts/main', $data) . view('outgoing_items/history', $data);
-    }
-
-    public function getAvailableProducts()
-    {
-        if (!$this->request->isAJAX()) {
-            return redirect()->to('/outgoing-items');
-        }
-
-        $categoryId = $this->request->getGet('category_id');
-        $search = $this->request->getGet('search');
-
-        $builder = $this->productModel->select('products.*, categories.name as category_name')
-            ->join('categories', 'categories.id = products.category_id')
-            ->where('products.stock >', 0);
-
-        if ($categoryId) {
-            $builder->where('products.category_id', $categoryId);
-        }
-
-        if ($search) {
-            $builder->groupStart()
-                ->like('products.name', $search)
-                ->orLike('products.code', $search)
-                ->groupEnd();
-        }
-
-        $products = $builder->orderBy('products.name', 'ASC')
-            ->limit(20)
-            ->findAll();
-
-        return $this->response->setJSON($products);
-    }
-
-    public function validateStockBeforeUpdate($id)
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['valid' => false]);
-        }
-
-        $quantity = $this->request->getPost('quantity');
-        $productId = $this->request->getPost('product_id');
-
-        $currentItem = $this->outgoingModel->find($id);
-        if (!$currentItem) {
-            return $this->response->setJSON(['valid' => false, 'message' => 'Item tidak ditemukan']);
-        }
-
-        // Calculate stock needed for the update
-        $stockAdjustment = $quantity - $currentItem['quantity'];
-
-        if ($stockAdjustment > 0) {
-            // Need more stock
-            $product = $this->productModel->find($productId);
-
-            if ($product['stock'] < $stockAdjustment) {
-                return $this->response->setJSON([
-                    'valid' => false,
-                    'message' => "Stok tidak mencukupi. Stok tersedia: {$product['stock']} {$product['unit']}"
-                ]);
-            }
-        }
-
-        return $this->response->setJSON(['valid' => true]);
+        return $this->response
+            ->setContentType('application/json')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody(json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }

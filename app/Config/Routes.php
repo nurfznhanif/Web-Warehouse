@@ -114,10 +114,34 @@ $routes->get('/receive-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1'
 $routes->get('/incoming-history/(:num)', 'IncomingItems::history/$1', ['filter' => 'auth']);
 
 
-// Outgoing items routes
-$routes->get('/outgoing-items', 'OutgoingItems::index');
-$routes->get('/outgoing-items/create', 'OutgoingItems::create');
-$routes->post('/outgoing-items/store', 'OutgoingItems::store');
+// Outgoing items routes - Complete
+$routes->group('outgoing-items', ['filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'OutgoingItems::index');
+    $routes->get('index', 'OutgoingItems::index');
+    $routes->get('create', 'OutgoingItems::create');
+    $routes->post('store', 'OutgoingItems::store');
+    $routes->get('edit/(:num)', 'OutgoingItems::edit/$1');
+    $routes->post('update/(:num)', 'OutgoingItems::update/$1');
+    $routes->get('delete/(:num)', 'OutgoingItems::delete/$1');
+    $routes->get('history/(:num)', 'OutgoingItems::history/$1');
+    $routes->get('export', 'OutgoingItems::export');
+
+    // AJAX routes
+    $routes->get('get-product-info/(:num)', 'OutgoingItems::getProductInfo/$1');
+    $routes->get('get-product-stock/(:num)', 'OutgoingItems::getProductStock/$1');
+    $routes->post('bulk-issue', 'OutgoingItems::bulkIssue');
+});
+
+// Legacy outgoing routes - untuk backward compatibility
+$routes->group('outgoing', ['filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'OutgoingItems::index');
+    $routes->get('index', 'OutgoingItems::index');
+    $routes->get('create', 'OutgoingItems::create');
+    $routes->post('store', 'OutgoingItems::store');
+    $routes->get('edit/(:num)', 'OutgoingItems::edit/$1');
+    $routes->post('update/(:num)', 'OutgoingItems::update/$1');
+    $routes->get('delete/(:num)', 'OutgoingItems::delete/$1');
+});
 
 // Legacy outgoing routes
 $routes->get('/outgoing', 'OutgoingItems::index');

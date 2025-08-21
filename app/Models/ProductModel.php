@@ -20,6 +20,10 @@ class ProductModel extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
+    // ========================================
+    // VALIDATION RULES
+    // ========================================
+
     protected $validationRules = [
         'category_id' => 'required|integer',
         'name' => 'required|min_length[3]|max_length[255]',
@@ -59,6 +63,10 @@ class ProductModel extends Model
         ],
     ];
 
+    // ========================================
+    // CALLBACKS
+    // ========================================
+
     protected $beforeInsert = ['setDefaultValues'];
     protected $beforeUpdate = ['setDefaultValues'];
 
@@ -79,28 +87,82 @@ class ProductModel extends Model
         return $data;
     }
 
+    // ========================================
+    // BASIC OPERATIONS
+    // ========================================
+
     public function getProductsWithCategory($limit = null, $offset = null)
     {
-        $builder = $this->db->table($this->table . ' p');
-        $builder->select('p.*, c.name as category_name');
-        $builder->join('categories c', 'p.category_id = c.id', 'left');
-        $builder->orderBy('p.created_at', 'DESC');
+        $builder = $this->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->orderBy('products.created_at', 'DESC');
 
         if ($limit) {
             $builder->limit($limit, $offset);
         }
 
-        return $builder->get()->getResultArray();
+        return $builder->findAll();
     }
 
-    public function getProductWithDetails($id)
+    public function getProductWithCategory($id)
     {
-        return $this->db->table($this->table . ' p')
-            ->select('p.*, c.name as category_name')
-            ->join('categories c', 'p.category_id = c.id', 'left')
-            ->where('p.id', $id)
-            ->get()
-            ->getRowArray();
+        return $this->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->where('products.id', $id)
+            ->first();
+    }
+
+    public function getProductsForSelect($categoryId = null)
+    {
+        $builder = $this->select('id, name, code, unit, stock, min_stock');
+
+        if ($categoryId) {
+            $builder->where('category_id', $categoryId);
+        }
+
+        return $builder->where('stock >', 0)
+            ->orderBy('name', 'ASC')
+            ->findAll();
+    }
+
+    public function searchProducts($keyword, $limit = 10)
+    {
+        return $this->groupStart()
+            ->like('name', $keyword)
+            ->orLike('code', $keyword)
+            ->groupEnd()
+            ->limit($limit)
+            ->findAll();
+    }
+
+    // ========================================
+    // STOCK MANAGEMENT
+    // ========================================
+
+    public function checkStockAvailability($productId, $quantity)
+    {
+        $product = $this->find($productId);
+
+        if (!$product) {
+            return [
+                'available' => false,
+                'message' => 'Produk tidak ditemukan'
+            ];
+        }
+
+        if ($product['stock'] < $quantity) {
+            return [
+                'available' => false,
+                'message' => 'Stok tidak mencukupi. Stok tersedia: ' . number_format($product['stock']) . ' ' . $product['unit']
+            ];
+        }
+
+        return [
+            'available' => true,
+            'current_stock' => $product['stock'],
+            'remaining_stock' => $product['stock'] - $quantity,
+            'min_stock' => $product['min_stock']
+        ];
     }
 
     public function updateStock($productId, $quantity, $operation = 'add')
@@ -110,9 +172,11 @@ class ProductModel extends Model
             return false;
         }
 
-        $newStock = $operation === 'add'
-            ? $product['stock'] + $quantity
-            : $product['stock'] - $quantity;
+        $newStock = match ($operation) {
+            'add' => $product['stock'] + $quantity,
+            'subtract' => $product['stock'] - $quantity,
+            default => $product['stock']
+        };
 
         // Pastikan stok tidak minus
         if ($newStock < 0) {
@@ -122,7 +186,7 @@ class ProductModel extends Model
         return $this->update($productId, ['stock' => $newStock]);
     }
 
-    public function addStock($productId, $quantity)
+    public function increaseStock($productId, $quantity)
     {
         return $this->updateStock($productId, $quantity, 'add');
     }
@@ -132,52 +196,82 @@ class ProductModel extends Model
         return $this->updateStock($productId, $quantity, 'subtract');
     }
 
+    public function bulkUpdateStock($updates)
+    {
+        $this->db->transStart();
+
+        try {
+            foreach ($updates as $update) {
+                $this->update($update['id'], ['stock' => $update['stock']]);
+            }
+
+            $this->db->transComplete();
+            return $this->db->transStatus();
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            return false;
+        }
+    }
+
+    // ========================================
+    // STOCK ALERTS & MONITORING
+    // ========================================
+
     public function getLowStockProducts($limit = null)
     {
-        $builder = $this->db->table($this->table . ' p');
-        $builder->select('p.*, c.name as category_name');
-        $builder->join('categories c', 'p.category_id = c.id', 'left');
-        $builder->where('p.stock <=', 'p.min_stock', false);
-        $builder->orderBy('p.stock', 'ASC');
+        $builder = $this->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->where('products.stock <=', 'products.min_stock', false)
+            ->orderBy('products.stock', 'ASC');
 
         if ($limit) {
             $builder->limit($limit);
         }
 
-        return $builder->get()->getResultArray();
+        return $builder->findAll();
     }
 
     public function getOutOfStockProducts($limit = null)
     {
-        $builder = $this->db->table($this->table . ' p');
-        $builder->select('p.*, c.name as category_name');
-        $builder->join('categories c', 'p.category_id = c.id', 'left');
-        $builder->where('p.stock <=', 0);
-        $builder->orderBy('p.updated_at', 'DESC');
+        $builder = $this->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left')
+            ->where('products.stock <=', 0)
+            ->orderBy('products.updated_at', 'DESC');
 
         if ($limit) {
             $builder->limit($limit);
         }
 
-        return $builder->get()->getResultArray();
+        return $builder->findAll();
     }
+
+    public function getStockAlert($threshold = null)
+    {
+        $builder = $this->select('products.*, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left');
+
+        if ($threshold) {
+            $builder->where('products.stock <=', $threshold);
+        } else {
+            $builder->where('products.stock <=', 'products.min_stock', false);
+        }
+
+        return $builder->orderBy('products.stock', 'ASC')->findAll();
+    }
+
+    // ========================================
+    // STATISTICS & REPORTING
+    // ========================================
 
     public function getStockStatistics()
     {
         $total = $this->countAll();
 
-        $inStock = $this->db->table($this->table)
-            ->where('stock >', 'min_stock', false)
-            ->countAllResults();
-
-        $lowStock = $this->db->table($this->table)
-            ->where('stock >', 0)
+        $inStock = $this->where('stock >', 'min_stock', false)->countAllResults(false);
+        $lowStock = $this->where('stock >', 0)
             ->where('stock <=', 'min_stock', false)
-            ->countAllResults();
-
-        $outOfStock = $this->db->table($this->table)
-            ->where('stock <=', 0)
-            ->countAllResults();
+            ->countAllResults(false);
+        $outOfStock = $this->where('stock <=', 0)->countAllResults(false);
 
         return [
             'total' => $total,
@@ -224,47 +318,13 @@ class ProductModel extends Model
         ];
     }
 
-    public function hasTransactions($productId)
-    {
-        $incomingCount = $this->db->table('incoming_items')
-            ->where('product_id', $productId)
-            ->countAllResults();
-
-        $outgoingCount = $this->db->table('outgoing_items')
-            ->where('product_id', $productId)
-            ->countAllResults();
-
-        return ($incomingCount + $outgoingCount) > 0;
-    }
-
-    public function getProductsForSelect($categoryId = null)
-    {
-        $builder = $this->select('id, name, code, unit, stock');
-
-        if ($categoryId) {
-            $builder->where('category_id', $categoryId);
-        }
-
-        return $builder->where('stock >', 0)
-            ->orderBy('name', 'ASC')
-            ->findAll();
-    }
-
-    public function searchProducts($keyword, $limit = 10)
-    {
-        return $this->like('name', $keyword)
-            ->orLike('code', $keyword)
-            ->limit($limit)
-            ->findAll();
-    }
-
     public function getTopProducts($type = 'incoming', $limit = 10, $dateFrom = null, $dateTo = null)
     {
         $table = $type === 'incoming' ? 'incoming_items' : 'outgoing_items';
 
-        $builder = $this->db->table($table . ' t');
-        $builder->select('p.id, p.name, p.code, p.unit, SUM(t.quantity) as total_quantity, COUNT(t.id) as transaction_count');
-        $builder->join('products p', 't.product_id = p.id');
+        $builder = $this->db->table($table . ' t')
+            ->select('p.id, p.name, p.code, p.unit, SUM(t.quantity) as total_quantity, COUNT(t.id) as transaction_count')
+            ->join('products p', 't.product_id = p.id');
 
         if ($dateFrom) {
             $builder->where('DATE(t.date) >=', $dateFrom);
@@ -274,23 +334,50 @@ class ProductModel extends Model
             $builder->where('DATE(t.date) <=', $dateTo);
         }
 
-        $builder->groupBy('p.id, p.name, p.code, p.unit');
-        $builder->orderBy('total_quantity', 'DESC');
-        $builder->limit($limit);
-
-        return $builder->get()->getResultArray();
+        return $builder->groupBy('p.id, p.name, p.code, p.unit')
+            ->orderBy('total_quantity', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
     }
+
+    public function getProductReport($dateFrom = null, $dateTo = null)
+    {
+        $builder = $this->select('products.*, categories.name as category_name,
+                                 COALESCE(SUM(ii.quantity), 0) as total_incoming,
+                                 COALESCE(SUM(oi.quantity), 0) as total_outgoing,
+                                 (COALESCE(SUM(ii.quantity), 0) - COALESCE(SUM(oi.quantity), 0)) as net_movement')
+            ->join('categories', 'products.category_id = categories.id', 'left')
+            ->join('incoming_items ii', 'products.id = ii.product_id', 'left')
+            ->join('outgoing_items oi', 'products.id = oi.product_id', 'left');
+
+        if ($dateFrom) {
+            $builder->where('(ii.date IS NULL OR DATE(ii.date) >=', $dateFrom . ')')
+                ->where('(oi.date IS NULL OR DATE(oi.date) >=', $dateFrom . ')');
+        }
+
+        if ($dateTo) {
+            $builder->where('(ii.date IS NULL OR DATE(ii.date) <=', $dateTo . ')')
+                ->where('(oi.date IS NULL OR DATE(oi.date) <=', $dateTo . ')');
+        }
+
+        return $builder->groupBy('products.id, products.name, products.code, products.unit, products.stock, products.min_stock, categories.name')
+            ->orderBy('products.name', 'ASC')
+            ->findAll();
+    }
+
+    // ========================================
+    // PRODUCT MOVEMENT & HISTORY
+    // ========================================
 
     public function getProductMovement($productId, $dateFrom = null, $dateTo = null)
     {
-        $movements = [];
-
         // Get incoming items
-        $incomingBuilder = $this->db->table('incoming_items i');
-        $incomingBuilder->select('i.date, i.quantity, "incoming" as type, i.description, p.purchase_date, v.name as vendor_name');
-        $incomingBuilder->join('purchases p', 'i.purchase_id = p.id', 'left');
-        $incomingBuilder->join('vendors v', 'p.vendor_id = v.id', 'left');
-        $incomingBuilder->where('i.product_id', $productId);
+        $incomingBuilder = $this->db->table('incoming_items i')
+            ->select('i.date, i.quantity, "incoming" as type, i.notes as description, p.purchase_date, v.name as vendor_name')
+            ->join('purchases p', 'i.purchase_id = p.id', 'left')
+            ->join('vendors v', 'p.vendor_id = v.id', 'left')
+            ->where('i.product_id', $productId);
 
         if ($dateFrom) {
             $incomingBuilder->where('DATE(i.date) >=', $dateFrom);
@@ -302,9 +389,9 @@ class ProductModel extends Model
         $incoming = $incomingBuilder->get()->getResultArray();
 
         // Get outgoing items
-        $outgoingBuilder = $this->db->table('outgoing_items o');
-        $outgoingBuilder->select('o.date, o.quantity, "outgoing" as type, o.description, NULL as purchase_date, NULL as vendor_name');
-        $outgoingBuilder->where('o.product_id', $productId);
+        $outgoingBuilder = $this->db->table('outgoing_items o')
+            ->select('o.date, o.quantity, "outgoing" as type, o.description, NULL as purchase_date, o.recipient as vendor_name')
+            ->where('o.product_id', $productId);
 
         if ($dateFrom) {
             $outgoingBuilder->where('DATE(o.date) >=', $dateFrom);
@@ -322,6 +409,50 @@ class ProductModel extends Model
         });
 
         return $movements;
+    }
+
+    public function getStockMovementSummary($productId, $days = 30)
+    {
+        $query = $this->db->query("
+            SELECT 
+                DATE(date) as movement_date,
+                'incoming' as type,
+                SUM(quantity) as total_quantity
+            FROM incoming_items 
+            WHERE product_id = ? AND date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+            GROUP BY DATE(date)
+            
+            UNION ALL
+            
+            SELECT 
+                DATE(date) as movement_date,
+                'outgoing' as type,
+                SUM(quantity) as total_quantity
+            FROM outgoing_items 
+            WHERE product_id = ? AND date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+            GROUP BY DATE(date)
+            
+            ORDER BY movement_date DESC
+        ", [$productId, $days, $productId, $days]);
+
+        return $query->getResultArray();
+    }
+
+    // ========================================
+    // UTILITY FUNCTIONS
+    // ========================================
+
+    public function hasTransactions($productId)
+    {
+        $incomingCount = $this->db->table('incoming_items')
+            ->where('product_id', $productId)
+            ->countAllResults();
+
+        $outgoingCount = $this->db->table('outgoing_items')
+            ->where('product_id', $productId)
+            ->countAllResults();
+
+        return ($incomingCount + $outgoingCount) > 0;
     }
 
     public function generateProductCode($categoryId = null)
@@ -356,66 +487,5 @@ class ProductModel extends Model
         }
 
         return $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-    }
-
-    public function bulkUpdateStock($updates)
-    {
-        $this->db->transStart();
-
-        try {
-            foreach ($updates as $update) {
-                $this->update($update['id'], ['stock' => $update['stock']]);
-            }
-
-            $this->db->transComplete();
-            return $this->db->transStatus();
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            return false;
-        }
-    }
-
-    public function getStockAlert($threshold = null)
-    {
-        $builder = $this->db->table($this->table . ' p');
-        $builder->select('p.*, c.name as category_name');
-        $builder->join('categories c', 'p.category_id = c.id', 'left');
-
-        if ($threshold) {
-            $builder->where('p.stock <=', $threshold);
-        } else {
-            $builder->where('p.stock <=', 'p.min_stock', false);
-        }
-
-        $builder->orderBy('p.stock', 'ASC');
-
-        return $builder->get()->getResultArray();
-    }
-
-    public function getProductReport($dateFrom = null, $dateTo = null)
-    {
-        $builder = $this->db->table($this->table . ' p');
-        $builder->select('p.*, c.name as category_name,
-                         COALESCE(SUM(ii.quantity), 0) as total_incoming,
-                         COALESCE(SUM(oi.quantity), 0) as total_outgoing,
-                         (COALESCE(SUM(ii.quantity), 0) - COALESCE(SUM(oi.quantity), 0)) as net_movement');
-        $builder->join('categories c', 'p.category_id = c.id', 'left');
-        $builder->join('incoming_items ii', 'p.id = ii.product_id', 'left');
-        $builder->join('outgoing_items oi', 'p.id = oi.product_id', 'left');
-
-        if ($dateFrom) {
-            $builder->where('(ii.date IS NULL OR DATE(ii.date) >=', $dateFrom . ')');
-            $builder->where('(oi.date IS NULL OR DATE(oi.date) >=', $dateFrom . ')');
-        }
-
-        if ($dateTo) {
-            $builder->where('(ii.date IS NULL OR DATE(ii.date) <=', $dateTo . ')');
-            $builder->where('(oi.date IS NULL OR DATE(oi.date) <=', $dateTo . ')');
-        }
-
-        $builder->groupBy('p.id, p.name, p.code, p.unit, p.stock, p.min_stock, c.name');
-        $builder->orderBy('p.name', 'ASC');
-
-        return $builder->get()->getResultArray();
     }
 }

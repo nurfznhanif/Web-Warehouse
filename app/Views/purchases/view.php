@@ -254,12 +254,6 @@
                             class="w-full bg-blue-600 hover:bg-blue-700 text-white text-center px-4 py-2 rounded-lg transition-colors block">
                             <i class="fas fa-edit mr-2"></i>Edit Pembelian
                         </a>
-
-                        <button onclick="confirmReceive()"
-                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            <i class="fas fa-check mr-2"></i>Tandai Diterima
-                        </button>
-
                         <button onclick="confirmCancel()"
                             class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
                             <i class="fas fa-times mr-2"></i>Batalkan
