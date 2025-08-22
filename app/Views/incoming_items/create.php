@@ -34,8 +34,8 @@
                             <option value="<?= $product['id'] ?>"
                                 <?= old('product_id') == $product['id'] ? 'selected' : '' ?>
                                 data-unit="<?= esc($product['unit']) ?>"
-                                data-current-stock="<?= $product['current_stock'] ?>">
-                                <?= esc($product['code']) ?> - <?= esc($product['name']) ?> (Stok: <?= number_format($product['current_stock']) ?> <?= esc($product['unit']) ?>)
+                                data-current-stock="<?= $product['stock'] ?>">
+                                <?= esc($product['code']) ?> - <?= esc($product['name']) ?> (Stok: <?= number_format($product['stock']) ?> <?= esc($product['unit']) ?>)
                             </option>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -88,7 +88,7 @@
                                 data-vendor="<?= esc($purchase['vendor_name']) ?>"
                                 data-items="<?= esc(json_encode($purchase['items'] ?? [])) ?>">
                                 PO-<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?>
-                                (<?= date('d M Y', strtotime($purchase['date'])) ?>)
+                                (<?= date('d M Y', strtotime($purchase['purchase_date'])) ?>)
                             </option>
                         <?php endforeach; ?>
                     <?php endif; ?>

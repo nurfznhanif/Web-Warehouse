@@ -115,7 +115,7 @@ class IncomingItems extends BaseController
 
         // Get current stock for the product
         $product = $this->productModel->find($incomingItem['product_id']);
-        $incomingItem['current_stock'] = $product['stock'] ?? 0;
+        $incomingItem['stock'] = $product['stock'] ?? 0;
 
         $data = [
             'title' => 'Detail Barang Masuk #' . $id . ' - Vadhana Warehouse',

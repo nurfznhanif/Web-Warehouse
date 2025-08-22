@@ -202,8 +202,8 @@ class IncomingItemModel extends Model
                 throw new \Exception('Produk tidak ditemukan');
             }
 
-            $newStock = $product['current_stock'] + $data['quantity'];
-            $updateStock = $productModel->update($data['product_id'], ['current_stock' => $newStock]);
+            $newStock = $product['stock'] + $data['quantity'];
+            $updateStock = $productModel->update($data['product_id'], ['stock' => $newStock]);
 
             if (!$updateStock) {
                 throw new \Exception('Gagal mengupdate stok produk');
@@ -335,13 +335,13 @@ class IncomingItemModel extends Model
                 throw new \Exception('Produk tidak ditemukan');
             }
 
-            if ($product['current_stock'] < $incomingItem['quantity']) {
+            if ($product['stock'] < $incomingItem['quantity']) {
                 throw new \Exception('Tidak dapat menghapus: stok produk akan menjadi negatif');
             }
 
             // Reduce stock
-            $newStock = $product['current_stock'] - $incomingItem['quantity'];
-            $updateStock = $productModel->update($incomingItem['product_id'], ['current_stock' => $newStock]);
+            $newStock = $product['stock'] - $incomingItem['quantity'];
+            $updateStock = $productModel->update($incomingItem['product_id'], ['stock' => $newStock]);
 
             if (!$updateStock) {
                 throw new \Exception('Gagal mengupdate stok produk');

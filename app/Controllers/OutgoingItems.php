@@ -258,7 +258,7 @@ class OutgoingItems extends BaseController
         $response = [
             'available' => $stockCheck['available'],
             'message' => $stockCheck['message'],
-            'current_stock' => $product['stock'] ?? 0,
+            'stock' => $product['stock'] ?? 0,
             'unit' => $product['unit'] ?? ''
         ];
 

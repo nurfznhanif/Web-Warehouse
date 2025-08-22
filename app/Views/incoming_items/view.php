@@ -9,13 +9,8 @@
         <p class="text-gray-600">Detail transaksi barang masuk #<?= $incoming_item['id'] ?></p>
     </div>
     <div class="flex space-x-3">
-        <a href="<?= base_url('/incoming-items/edit/' . $incoming_item['id']) ?>"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center">
-            <i class="fas fa-edit mr-2"></i>
-            Edit
-        </a>
         <a href="<?= base_url('/incoming-items') ?>"
-            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center">
+            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors">
             <i class="fas fa-arrow-left mr-2"></i>
             Kembali
         </a>
@@ -140,20 +135,10 @@
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
             <div class="space-y-3">
                 <a href="<?= base_url('/incoming-items/edit/' . $incoming_item['id']) ?>"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center">
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center transition-colors">
                     <i class="fas fa-edit mr-2"></i>
                     Edit Transaksi
                 </a>
-                <a href="<?= base_url('/products/view/' . $incoming_item['product_id']) ?>"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center">
-                    <i class="fas fa-box mr-2"></i>
-                    Lihat Produk
-                </a>
-                <button onclick="printTransaction()"
-                    class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center">
-                    <i class="fas fa-print mr-2"></i>
-                    Cetak
-                </button>
             </div>
         </div>
 
@@ -187,57 +172,75 @@
     </div>
 </div>
 
-<!-- Print Modal -->
-<div id="printModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Cetak Transaksi</h3>
-            <div class="space-y-3">
-                <button onclick="printReceipt()"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                    Cetak Bukti Transaksi
-                </button>
-                <button onclick="printLabel()"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                    Cetak Label Produk
-                </button>
-                <button onclick="closePrintModal()"
-                    class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
-                    Batal
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load current stock info
-        loadStockInfo();
-    });
+    // Application object for better organization
+    const IncomingItemDetail = {
+            // Initialize the page
+            init() {
+                this.loadStockInfo();
+                this.bindEvents();
+            },
 
-    function loadStockInfo() {
-        // Simulate loading current stock - in real implementation, this would be an AJAX call
-        const currentStock = <?= $incoming_item['current_stock'] ?? 0 ?>;
-        const quantity = <?= $incoming_item['quantity'] ?>;
-        const unit = '<?= esc($incoming_item['unit']) ?>';
+            // Load stock information
+            loadStockInfo() {
+                const currentStock = <?= $incoming_item['current_stock'] ?? 0 ?>;
+                const quantity = <?= $incoming_item['quantity'] ?>;
+                const unit = '<?= esc($incoming_item['unit']) ?>';
+                const previousStock = currentStock - quantity;
 
-        const previousStock = currentStock - quantity;
+                const previousStockEl = document.getElementById('previous-stock');
+                const currentStockEl = document.getElementById('current-stock');
 
-        document.getElementById('previous-stock').textContent = `${previousStock.toLocaleString()} ${unit}`;
-        document.getElementById('current-stock').textContent = `${currentStock.toLocaleString()} ${unit}`;
-    }
+                if (previousStockEl) {
+                    previousStockEl.textContent = `${previousStock.toLocaleString()} ${unit}`;
+                }
+                if (currentStockEl) {
+                    currentStockEl.textContent = `${currentStock.toLocaleString()} ${unit}`;
+                }
+            },
 
-    function printTransaction() {
-        document.getElementById('printModal').classList.remove('hidden');
-    }
+            // Bind event listeners
+            bindEvents() {
+                const printModal = document.getElementById('printModal');
+                if (printModal) {
+                    printModal.addEventListener('click', (e) => {
+                        if (e.target === printModal) {
+                            this.closePrintModal();
+                        }
+                    });
+                }
+            },
 
-    function closePrintModal() {
-        document.getElementById('printModal').classList.add('hidden');
-    }
+            // Print functions
+            printTransaction() {
+                const modal = document.getElementById('printModal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                }
+            },
 
-    function printReceipt() {
-        const printContent = `
+            closePrintModal() {
+                const modal = document.getElementById('printModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+            },
+
+            printReceipt() {
+                const printContent = this.generateReceiptHTML();
+                this.openPrintWindow(printContent, 'Bukti Barang Masuk #<?= $incoming_item['id'] ?>');
+                this.closePrintModal();
+            },
+
+            printLabel() {
+                const labelContent = this.generateLabelHTML();
+                this.openPrintWindow(labelContent, 'Label Produk - <?= esc($incoming_item['product_name']) ?>');
+                this.closePrintModal();
+            },
+
+            // Generate receipt HTML
+            generateReceiptHTML() {
+                return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px;">
                 <h1 style="margin: 0; font-size: 24px;">BUKTI BARANG MASUK</h1>
@@ -310,22 +313,71 @@
                 <p style="margin: 0; color: #666; font-size: 12px;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
             </div>
         </div>
-    `;
+        `;
+            },
 
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+            // Generate label HTML
+            generateLabelHTML() {
+                return `
+        <div style="font-family: Arial, sans-serif; width: 300px; margin: 0 auto; padding: 20px; border: 2px solid #000;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 18px;">LABEL PRODUK</h2>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <strong>Produk:</strong><br>
+                <span style="font-size: 16px;"><?= esc($incoming_item['product_name']) ?></span>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <strong>Kode:</strong> <?= esc($incoming_item['product_code']) ?>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <strong>Kategori:</strong> <?= esc($incoming_item['category_name']) ?>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <strong>Tanggal Masuk:</strong><br>
+                <?= date('d M Y', strtotime($incoming_item['date'])) ?>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+                <strong style="font-size: 18px;"><?= number_format($incoming_item['quantity']) ?> <?= esc($incoming_item['unit']) ?></strong>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; font-size: 10px; color: #666;">
+                ID: #<?= $incoming_item['id'] ?> | <?= date('d/m/Y H:i') ?>
+            </div>
+        </div>
+        `;
+            },
+
+            // Open print window
+            openPrintWindow(content, title) {
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Pop-up diblokir! Silakan aktifkan pop-up untuk mencetak.');
+                    return;
+                }
+
+                printWindow.document.write(`
         <html>
             <head>
-                <title>Bukti Barang Masuk #<?= $incoming_item['id'] ?></title>
+                <title>${title}</title>
                 <style>
-                    body { margin: 0; padding: 20px; }
+                    body { 
+                        margin: 0; 
+                        padding: 20px; 
+                        font-family: Arial, sans-serif; 
+                    }
                     @media print {
                         body { margin: 0; }
                     }
                 </style>
             </head>
             <body>
-                ${printContent}
+                ${content}
                 <script>
                     window.onload = function() {
                         window.print();
@@ -337,92 +389,6 @@
 </body>
 
 </html>
-`);
-printWindow.document.close();
-
-closePrintModal();
-}
-
-function printLabel() {
-const labelContent = `
-<div style="font-family: Arial, sans-serif; width: 300px; margin: 0 auto; padding: 20px; border: 2px solid #000;">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; font-size: 18px;">LABEL PRODUK</h2>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-        <strong>Produk:</strong><br>
-        <span style="font-size: 16px;"><?= esc($incoming_item['product_name']) ?></span>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-        <strong>Kode:</strong> <?= esc($incoming_item['product_code']) ?>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-        <strong>Kategori:</strong> <?= esc($incoming_item['category_name']) ?>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-        <strong>Tanggal Masuk:</strong><br>
-        <?= date('d M Y', strtotime($incoming_item['date'])) ?>
-    </div>
-
-    <div style="text-align: center; margin-top: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
-        <strong style="font-size: 18px;"><?= number_format($incoming_item['quantity']) ?> <?= esc($incoming_item['unit']) ?></strong>
-    </div>
-
-    <div style="text-align: center; margin-top: 15px; font-size: 10px; color: #666;">
-        ID: #<?= $incoming_item['id'] ?> | <?= date('d/m/Y H:i') ?>
-    </div>
-</div>
-`;
-
-const printWindow = window.open('', '_blank');
-printWindow.document.write(`
-<html>
-
-<head>
-    <title>Label Produk - <?= esc($incoming_item['product_name']) ?></title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-        }
-
-        @media print {
-            body {
-                margin: 0;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    ${labelContent}
-    <script>
-        window.onload = function() {
-            window.print();
-            window.onafterprint = function() {
-                window.close();
-            }
-        }
-    </script>
-</body>
-
-</html>
-`);
-printWindow.document.close();
-
-closePrintModal();
-}
-
-// Close modal when clicking outside
-document.getElementById('printModal').addEventListener('click', function(e) {
-if (e.target === this) {
-closePrintModal();
-}
-});
 </script>
 
 <?= $this->endSection() ?>
