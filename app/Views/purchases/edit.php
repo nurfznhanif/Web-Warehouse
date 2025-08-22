@@ -140,11 +140,11 @@
             </select>
         </td>
         <td class="py-3 px-2">
-            <input type="number" name="quantity[]" placeholder="0" min="0.01" step="0.01" required
+            <input type="number" name="quantity[]" placeholder="0" min="1" step="1" required
                 class="quantity-input w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </td>
         <td class="py-3 px-2">
-            <input type="number" name="price[]" placeholder="0" min="0.01" step="0.01" required
+            <input type="number" name="price[]" placeholder="0" min="1" step="1" required
                 class="price-input w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </td>
         <td class="py-3 px-2">
@@ -185,10 +185,10 @@
             const clone = template.content.cloneNode(true);
 
             if (itemData) {
-                // Fill with existing data
+                // Fill with existing data - format angka tanpa desimal
                 clone.querySelector('.product-select').value = itemData.product_id;
-                clone.querySelector('.quantity-input').value = itemData.quantity;
-                clone.querySelector('.price-input').value = itemData.price;
+                clone.querySelector('.quantity-input').value = parseFloat(itemData.quantity);
+                clone.querySelector('.price-input').value = parseFloat(itemData.price);
                 clone.querySelector('.subtotal').textContent = formatCurrency(itemData.total);
             }
 
@@ -278,11 +278,22 @@
         }
 
         function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(amount);
+            // Format currency tanpa desimal jika bilangan bulat
+            if (Math.floor(amount) === amount) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount);
+            } else {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            }
         }
 
         // Event listeners untuk form validation

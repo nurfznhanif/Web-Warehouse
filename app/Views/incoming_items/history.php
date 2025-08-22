@@ -1,313 +1,287 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
+<?php
+// Define format_quantity function inline since it's not defined globally
+if (!function_exists('format_quantity')) {
+    function format_quantity($number)
+    {
+        // Remove trailing zeros and format with thousands separator
+        $formatted = number_format((float)$number, 2, '.', ',');
+        $formatted = rtrim($formatted, '0');
+        $formatted = rtrim($formatted, '.');
+        return $formatted;
+    }
+}
+?>
 
-<!-- Page Header -->
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Riwayat Barang Masuk</h1>
-        <p class="text-gray-600">Riwayat transaksi barang masuk untuk produk: <strong><?= esc($product['name']) ?></strong></p>
-    </div>
-    <div class="flex space-x-3">
-        <a href="<?= base_url('/products/view/' . $product['id']) ?>"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center">
-            <i class="fas fa-box mr-2"></i>
-            Lihat Produk
-        </a>
-        <a href="<?= base_url('/incoming-items') ?>"
-            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center">
-            <i class="fas fa-arrow-left mr-2"></i>
-            Kembali
-        </a>
-    </div>
-</div>
-
-<!-- Product Info Card -->
-<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center">
-            <div class="bg-blue-100 rounded-lg p-3 mr-4">
-                <i class="fas fa-box text-blue-600 text-2xl"></i>
-            </div>
-            <div>
-                <h2 class="text-xl font-semibold text-gray-900"><?= esc($product['name']) ?></h2>
-                <p class="text-gray-500"><?= esc($product['code']) ?> • <?= esc($product['category_name']) ?></p>
-            </div>
+<div class="container mx-auto px-6 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Riwayat Barang Masuk</h1>
+            <p class="mt-2 text-gray-600">Riwayat penerimaan untuk produk: <span class="font-semibold"><?= esc($product['name']) ?></span></p>
         </div>
-        <div class="text-right">
-            <p class="text-sm text-gray-500">Stok Saat Ini</p>
-            <p class="text-2xl font-bold text-green-600"><?= number_format($product['current_stock']) ?> <?= esc($product['unit']) ?></p>
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
-                <p class="text-2xl font-bold text-gray-900"><?= count($history) ?></p>
-            </div>
-            <div class="bg-green-100 rounded-full p-3">
-                <i class="fas fa-list text-green-600 text-xl"></i>
-            </div>
+        <div class="flex space-x-3">
+            <a href="<?= base_url('/incoming-items') ?>"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Kembali ke Daftar
+            </a>
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Total Masuk</p>
-                <p class="text-2xl font-bold text-gray-900">
-                    <?php
-                    $totalIncoming = 0;
-                    foreach ($history as $item) {
-                        $totalIncoming += $item['quantity'];
-                    }
-                    echo number_format($totalIncoming);
-                    ?>
-                </p>
-            </div>
-            <div class="bg-blue-100 rounded-full p-3">
-                <i class="fas fa-arrow-down text-blue-600 text-xl"></i>
+    <!-- Product Info Card -->
+    <div class="bg-white rounded-lg shadow-sm mb-6">
+        <div class="p-6">
+            <div class="flex items-center space-x-6">
+                <div class="bg-blue-100 rounded-full p-4">
+                    <i class="fas fa-box text-blue-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-gray-900"><?= esc($product['name']) ?></h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                        <div>
+                            <span class="text-sm text-gray-500">Kode Produk</span>
+                            <p class="font-medium text-gray-900"><?= esc($product['code']) ?></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">Kategori</span>
+                            <p class="font-medium text-gray-900"><?= esc($product['category_name'] ?? 'Tidak ada kategori') ?></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">Stok Saat Ini</span>
+                            <p class="font-medium text-green-600"><?= format_quantity($product['stock'] ?? 0) ?> <?= esc($product['unit']) ?></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">Minimum Stok</span>
+                            <p class="font-medium text-orange-600"><?= format_quantity($product['min_stock'] ?? 0) ?> <?= esc($product['unit']) ?></p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Rata-rata per Transaksi</p>
-                <p class="text-2xl font-bold text-gray-900">
-                    <?php
-                    $avgIncoming = count($history) > 0 ? $totalIncoming / count($history) : 0;
-                    echo number_format($avgIncoming, 1);
-                    ?>
-                </p>
+    <!-- Statistics Cards -->
+    <?php if (!empty($history)): ?>
+        <?php
+        $totalReceived = array_sum(array_column($history, 'quantity'));
+        $totalTransactions = count($history);
+        $lastReceived = $history[0]['date'] ?? null;
+        $avgPerTransaction = $totalTransactions > 0 ? $totalReceived / $totalTransactions : 0;
+        ?>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Diterima</p>
+                        <p class="text-2xl font-bold text-gray-900"><?= format_quantity($totalReceived) ?></p>
+                        <p class="text-sm text-gray-500"><?= esc($product['unit']) ?></p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <i class="fas fa-arrow-down text-blue-600 text-xl"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-purple-100 rounded-full p-3">
-                <i class="fas fa-chart-bar text-purple-600 text-xl"></i>
-            </div>
-        </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Transaksi Terbaru</p>
-                <p class="text-lg font-bold text-gray-900">
-                    <?php
-                    if (!empty($history)) {
-                        echo date('d M Y', strtotime($history[0]['date']));
-                    } else {
-                        echo '-';
-                    }
-                    ?>
-                </p>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
+                        <p class="text-2xl font-bold text-gray-900"><?= format_quantity($totalTransactions) ?></p>
+                        <p class="text-sm text-gray-500">transaksi</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <i class="fas fa-list text-green-600 text-xl"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-orange-100 rounded-full p-3">
-                <i class="fas fa-calendar text-orange-600 text-xl"></i>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- History Table -->
-<div class="bg-white rounded-lg shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Riwayat Transaksi Barang Masuk</h3>
-            <div class="flex items-center space-x-4">
-                <button onclick="exportHistory()"
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
-                    <i class="fas fa-download mr-2"></i>
-                    Export
-                </button>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Rata-rata per Transaksi</p>
+                        <p class="text-2xl font-bold text-gray-900"><?= format_quantity($avgPerTransaction) ?></p>
+                        <p class="text-sm text-gray-500"><?= esc($product['unit']) ?></p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <?php if (empty($history)): ?>
-        <div class="text-center py-12">
-            <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
-            <p class="text-gray-500 text-lg">Belum ada riwayat barang masuk</p>
-            <p class="text-gray-400">Riwayat transaksi akan muncul di sini setelah ada barang masuk</p>
-        </div>
-    <?php else: ?>
-        <div class="overflow-x-auto">
-            <table class="w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kuantitas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Order</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php foreach ($history as $index => $item): ?>
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <?= $index + 1 ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900"><?= date('d M Y', strtotime($item['date'])) ?></div>
-                                <div class="text-xs text-gray-500"><?= date('H:i', strtotime($item['date'])) ?></div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="text-sm font-medium text-green-600">
-                                        +<?= number_format($item['quantity']) ?> <?= esc($item['unit']) ?>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <?= $item['purchase_number'] ? 'PO-' . $item['purchase_number'] : '-' ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <?= esc($item['vendor_name'] ?? '-') ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <?= esc($item['user_name']) ?>
-                            </td>
-                            <td class="px-6 py-4 max-w-xs">
-                                <?php if (!empty($item['notes'])): ?>
-                                    <div class="text-sm text-gray-900 truncate" title="<?= esc($item['notes']) ?>">
-                                        <?= esc($item['notes']) ?>
-                                    </div>
-                                <?php else: ?>
-                                    <span class="text-gray-400 text-sm">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-2">
-                                    <a href="<?= base_url('/incoming-items/view/' . $item['id']) ?>"
-                                        class="text-blue-600 hover:text-blue-900 transition duration-150 ease-in-out"
-                                        title="Lihat Detail">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>"
-                                        class="text-indigo-600 hover:text-indigo-900 transition duration-150 ease-in-out"
-                                        title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Terakhir Diterima</p>
+                        <p class="text-lg font-bold text-gray-900">
+                            <?= $lastReceived ? date('d/m/Y', strtotime($lastReceived)) : 'Belum ada' ?>
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            <?= $lastReceived ? date('H:i', strtotime($lastReceived)) : '' ?>
+                        </p>
+                    </div>
+                    <div class="bg-orange-100 rounded-full p-3">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     <?php endif; ?>
+
+    <!-- History Table -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Riwayat Penerimaan</h3>
+            <p class="text-sm text-gray-600 mt-1">
+                Daftar semua transaksi penerimaan untuk produk ini
+            </p>
+        </div>
+
+        <?php if (empty($history)): ?>
+            <div class="text-center py-12">
+                <i class="fas fa-history text-gray-400 text-5xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada riwayat penerimaan</h3>
+                <p class="text-gray-600">Produk ini belum pernah diterima melalui sistem.</p>
+                <a href="<?= base_url('/incoming-items/create') ?>"
+                    class="mt-4 inline-flex px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>
+                    Tambah Barang Masuk
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Transaksi
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tanggal & Waktu
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Jumlah
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Pembelian
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                User
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Aksi
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($history as $index => $item): ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="bg-green-100 rounded-full p-2 mr-3">
+                                            <i class="fas fa-arrow-down text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">
+                                                #<?= str_pad($item['id'], 6, '0', STR_PAD_LEFT) ?>
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                Transaksi ke-<?= $totalTransactions - $index ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        <?= date('d/m/Y', strtotime($item['date'])) ?>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        <?= date('H:i:s', strtotime($item['date'])) ?>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-lg font-bold text-green-600">
+                                        +<?= format_quantity($item['quantity']) ?>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        <?= esc($product['unit']) ?>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <?php if (!empty($item['purchase_number'])): ?>
+                                        <div class="text-sm text-blue-600">
+                                            <a href="<?= base_url('/purchases/view/' . $item['purchase_number']) ?>"
+                                                class="hover:underline">
+                                                #<?= str_pad($item['purchase_number'], 6, '0', STR_PAD_LEFT) ?>
+                                            </a>
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            <?= esc($item['vendor_name'] ?? 'Unknown Vendor') ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-sm text-gray-400">Manual Entry</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="bg-gray-100 rounded-full p-1 mr-2">
+                                            <i class="fas fa-user text-gray-600 text-xs"></i>
+                                        </div>
+                                        <span class="text-sm text-gray-900">
+                                            <?= esc($item['user_name'] ?? 'Unknown') ?>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex justify-end space-x-2">
+                                        <a href="<?= base_url('/incoming-items/view/' . $item['id']) ?>"
+                                            class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="<?= base_url('/incoming-items/receipt/' . $item['id']) ?>"
+                                            class="text-green-600 hover:text-green-900" title="Cetak Bukti">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>"
+                                            class="text-yellow-600 hover:text-yellow-900" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Timeline Summary -->
+            <div class="p-6 border-t border-gray-200 bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        <strong><?= format_quantity($totalTransactions) ?></strong> transaksi penerimaan tercatat
+                        dengan total <strong><?= format_quantity($totalReceived) ?> <?= esc($product['unit']) ?></strong>
+                    </div>
+                    <div class="flex space-x-4 text-sm text-gray-500">
+                        <?php if (!empty($history)): ?>
+                            <span>Pertama: <?= date('d/m/Y', strtotime(end($history)['date'])) ?></span>
+                            <span>Terakhir: <?= date('d/m/Y', strtotime($history[0]['date'])) ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
-<!-- Chart Section -->
-<?php if (!empty($history)): ?>
-    <div class="mt-8 bg-white rounded-lg shadow-sm p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Grafik Barang Masuk</h3>
-        <div class="h-64">
-            <canvas id="incomingChart"></canvas>
-        </div>
-    </div>
-<?php endif; ?>
+<?= $this->endSection() ?>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<?= $this->section('scripts') ?>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        <?php if (!empty($history)): ?>
-            // Prepare chart data
-            const chartData = <?= json_encode(array_reverse($history)) ?>;
-            const labels = chartData.map(item => {
-                const date = new Date(item.date);
-                return date.toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'short'
-                });
-            });
-            const quantities = chartData.map(item => parseFloat(item.quantity));
-
-            // Create chart
-            const ctx = document.getElementById('incomingChart').getContext('2d');
-            const chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Kuantitas Barang Masuk',
-                        data: quantities,
-                        borderColor: 'rgb(34, 197, 94)',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.1,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.parsed.y.toLocaleString()} <?= esc($product['unit']) ?>`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Kuantitas (<?= esc($product['unit']) ?>)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Tanggal'
-                            }
-                        }
-                    }
-                }
-            });
-        <?php endif; ?>
+        // Add any interactive features here if needed
+        console.log('History page loaded for product: <?= esc($product['name']) ?>');
     });
-
-    function exportHistory() {
-        // Create CSV content
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "No,Tanggal,Waktu,Kuantitas,Unit,Purchase Order,Vendor,User,Catatan\n";
-
-        const history = <?= json_encode($history) ?>;
-        history.forEach((item, index) => {
-            const date = new Date(item.date);
-            const dateStr = date.toLocaleDateString('id-ID');
-            const timeStr = date.toLocaleTimeString('id-ID');
-            const po = item.purchase_number ? `PO-${item.purchase_number}` : '-';
-            const vendor = item.vendor_name || '-';
-            const notes = (item.notes || '').replace(/"/g, '""'); // Escape quotes
-
-            csvContent += `${index + 1},"${dateStr}","${timeStr}","${item.quantity}","${item.unit}","${po}","${vendor}","${item.user_name}","${notes}"\n`;
-        });
-
-        // Download CSV
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `riwayat_barang_masuk_${<?= json_encode($product['code']) ?>}_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
 </script>
-
 <?= $this->endSection() ?>

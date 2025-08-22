@@ -1,284 +1,250 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-
-<!-- Page Header -->
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Tambah Barang Masuk</h1>
-        <p class="text-gray-600">Tambahkan transaksi barang masuk baru</p>
+<div class="container mx-auto px-6 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Tambah Barang Masuk</h1>
+        <p class="mt-2 text-gray-600">Catat penerimaan barang dari pembelian</p>
     </div>
-    <a href="<?= base_url('/incoming-items') ?>"
-        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Kembali
-    </a>
-</div>
 
-<!-- Form -->
-<div class="bg-white rounded-lg shadow-sm p-6">
-    <form action="<?= base_url('/incoming-items/store') ?>" method="POST" id="incomingForm">
-        <?= csrf_field() ?>
+    <div class="bg-white rounded-lg shadow-sm">
+        <form action="<?= base_url('/incoming-items/store') ?>" method="POST" id="incomingForm">
+            <?= csrf_field() ?>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Product Selection -->
-            <div class="md:col-span-2">
-                <label for="product_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    Produk <span class="text-red-500">*</span>
-                </label>
-                <select id="product_id" name="product_id" required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= isset($validation) && $validation->hasError('product_id') ? 'border-red-500' : '' ?>">
-                    <option value="">Pilih Produk</option>
-                    <?php if (isset($products)): ?>
-                        <?php foreach ($products as $product): ?>
-                            <option value="<?= $product['id'] ?>"
-                                <?= old('product_id') == $product['id'] ? 'selected' : '' ?>
-                                data-unit="<?= esc($product['unit']) ?>"
-                                data-current-stock="<?= $product['stock'] ?>">
-                                <?= esc($product['code']) ?> - <?= esc($product['name']) ?> (Stok: <?= number_format($product['stock']) ?> <?= esc($product['unit']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </select>
-                <?php if (isset($validation) && $validation->hasError('product_id')): ?>
-                    <p class="mt-1 text-sm text-red-600"><?= $validation->getError('product_id') ?></p>
+            <div class="p-6 space-y-6">
+                <!-- Alert untuk error -->
+                <?php if (session()->getFlashdata('error')): ?>
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                        <?= session()->getFlashdata('error') ?>
+                    </div>
                 <?php endif; ?>
-            </div>
 
-            <!-- Date -->
-            <div>
-                <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal <span class="text-red-500">*</span>
-                </label>
-                <input type="date" id="date" name="date" required
-                    value="<?= old('date', date('Y-m-d')) ?>"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= isset($validation) && $validation->hasError('date') ? 'border-red-500' : '' ?>">
-                <?php if (isset($validation) && $validation->hasError('date')): ?>
-                    <p class="mt-1 text-sm text-red-600"><?= $validation->getError('date') ?></p>
-                <?php endif; ?>
-            </div>
-
-            <!-- Quantity -->
-            <div>
-                <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                    Kuantitas <span class="text-red-500">*</span>
-                    <span id="unit-display" class="text-gray-500"></span>
-                </label>
-                <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" required
-                    value="<?= old('quantity') ?>"
-                    placeholder="Masukkan jumlah barang"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= isset($validation) && $validation->hasError('quantity') ? 'border-red-500' : '' ?>">
-                <?php if (isset($validation) && $validation->hasError('quantity')): ?>
-                    <p class="mt-1 text-sm text-red-600"><?= $validation->getError('quantity') ?></p>
-                <?php endif; ?>
-            </div>
-
-            <!-- Purchase Order (Optional) -->
-            <div class="md:col-span-2">
-                <label for="purchase_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    Purchase Order (Opsional)
-                </label>
-                <select id="purchase_id" name="purchase_id"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= isset($validation) && $validation->hasError('purchase_id') ? 'border-red-500' : '' ?>">
-                    <option value="">Pilih Purchase Order (Opsional)</option>
-                    <?php if (isset($purchases)): ?>
+                <!-- Pilih Pembelian -->
+                <div class="space-y-2">
+                    <label for="purchase_id" class="block text-sm font-medium text-gray-700">
+                        Pembelian <span class="text-red-500">*</span>
+                    </label>
+                    <select name="purchase_id" id="purchase_id" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Pilih Pembelian</option>
                         <?php foreach ($purchases as $purchase): ?>
                             <option value="<?= $purchase['id'] ?>"
-                                <?= old('purchase_id') == $purchase['id'] ? 'selected' : '' ?>
                                 data-vendor="<?= esc($purchase['vendor_name']) ?>"
-                                data-items="<?= esc(json_encode($purchase['items'] ?? [])) ?>">
-                                PO-<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?>
-                                (<?= date('d M Y', strtotime($purchase['purchase_date'])) ?>)
+                                data-date="<?= date('d/m/Y', strtotime($purchase['purchase_date'])) ?>"
+                                <?= old('purchase_id') == $purchase['id'] ? 'selected' : '' ?>>
+                                Purchase #<?= $purchase['id'] ?> - <?= esc($purchase['vendor_name']) ?>
+                                (<?= date('d/m/Y', strtotime($purchase['purchase_date'])) ?>)
                             </option>
                         <?php endforeach; ?>
+                    </select>
+                    <?php if (isset($validation) && $validation->hasError('purchase_id')): ?>
+                        <p class="text-sm text-red-600"><?= $validation->getError('purchase_id') ?></p>
                     <?php endif; ?>
-                </select>
-                <?php if (isset($validation) && $validation->hasError('purchase_id')): ?>
-                    <p class="mt-1 text-sm text-red-600"><?= $validation->getError('purchase_id') ?></p>
-                <?php endif; ?>
-                <p class="mt-1 text-sm text-gray-500">Jika barang masuk dari purchase order, pilih PO yang sesuai</p>
-            </div>
+                    <p class="text-sm text-gray-500">Pilih pembelian yang akan diterima barangnya</p>
+                </div>
 
-            <!-- Purchase Items Info (Will be populated by JavaScript) -->
-            <div id="purchase-items-info" class="md:col-span-2 hidden">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="font-medium text-blue-900 mb-2">Item dalam Purchase Order:</h4>
-                    <div id="purchase-items-list" class="space-y-2"></div>
+                <!-- Info Pembelian -->
+                <div id="purchaseInfo" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="font-medium text-blue-900 mb-2">Informasi Pembelian</h3>
+                    <div class="text-sm text-blue-800">
+                        <p><strong>Vendor:</strong> <span id="vendorName">-</span></p>
+                        <p><strong>Tanggal Pembelian:</strong> <span id="purchaseDate">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Produk yang akan diterima -->
+                <div id="productSection" class="hidden space-y-4">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Produk yang akan diterima
+                    </label>
+                    <div id="productList" class="space-y-3 border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                        <!-- Akan diisi via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Tanggal Penerimaan -->
+                <div class="space-y-2">
+                    <label for="date" class="block text-sm font-medium text-gray-700">
+                        Tanggal Penerimaan <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" name="date" id="date" required
+                        value="<?= old('date', date('Y-m-d')) ?>"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <?php if (isset($validation) && $validation->hasError('date')): ?>
+                        <p class="text-sm text-red-600"><?= $validation->getError('date') ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Catatan -->
+                <div class="space-y-2">
+                    <label for="notes" class="block text-sm font-medium text-gray-700">
+                        Catatan
+                    </label>
+                    <textarea name="notes" id="notes" rows="3"
+                        placeholder="Catatan tambahan (opsional)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><?= old('notes') ?></textarea>
+                    <?php if (isset($validation) && $validation->hasError('notes')): ?>
+                        <p class="text-sm text-red-600"><?= $validation->getError('notes') ?></p>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Notes -->
-            <div class="md:col-span-2">
-                <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
-                    Catatan
-                </label>
-                <textarea id="notes" name="notes" rows="3"
-                    placeholder="Catatan tambahan untuk transaksi ini..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 <?= isset($validation) && $validation->hasError('notes') ? 'border-red-500' : '' ?>"><?= old('notes') ?></textarea>
-                <?php if (isset($validation) && $validation->hasError('notes')): ?>
-                    <p class="mt-1 text-sm text-red-600"><?= $validation->getError('notes') ?></p>
-                <?php endif; ?>
+            <!-- Form Actions -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <a href="<?= base_url('/incoming-items') ?>"
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500">
+                    Batal
+                </a>
+                <button type="submit" id="submitBtn" disabled
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <i class="fas fa-save mr-2"></i>
+                    Simpan Barang Masuk
+                </button>
             </div>
-        </div>
-
-        <!-- Current Stock Info -->
-        <div id="current-stock-info" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-700">Stok Saat Ini:</p>
-                    <p id="current-stock-value" class="text-lg font-bold text-gray-900"></p>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-700">Stok Setelah Penambahan:</p>
-                    <p id="new-stock-value" class="text-lg font-bold text-green-600"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Submit Buttons -->
-        <div class="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-            <a href="<?= base_url('/incoming-items') ?>"
-                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
-                Batal
-            </a>
-            <button type="submit"
-                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center">
-                <i class="fas fa-save mr-2"></i>
-                Simpan Barang Masuk
-            </button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const productSelect = document.getElementById('product_id');
-        const quantityInput = document.getElementById('quantity');
-        const unitDisplay = document.getElementById('unit-display');
-        const currentStockInfo = document.getElementById('current-stock-info');
-        const currentStockValue = document.getElementById('current-stock-value');
-        const newStockValue = document.getElementById('new-stock-value');
         const purchaseSelect = document.getElementById('purchase_id');
-        const purchaseItemsInfo = document.getElementById('purchase-items-info');
-        const purchaseItemsList = document.getElementById('purchase-items-list');
+        const purchaseInfo = document.getElementById('purchaseInfo');
+        const productSection = document.getElementById('productSection');
+        const productList = document.getElementById('productList');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('incomingForm');
 
-        // Update unit display and stock info when product changes
-        productSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+        let selectedProducts = [];
 
-            if (selectedOption.value) {
-                const unit = selectedOption.dataset.unit;
-                const currentStock = parseFloat(selectedOption.dataset.currentStock) || 0;
-
-                unitDisplay.textContent = `(${unit})`;
-                currentStockValue.textContent = `${currentStock.toLocaleString()} ${unit}`;
-                currentStockInfo.classList.remove('hidden');
-
-                updateNewStock();
-            } else {
-                unitDisplay.textContent = '';
-                currentStockInfo.classList.add('hidden');
-            }
-        });
-
-        // Update new stock calculation when quantity changes
-        quantityInput.addEventListener('input', updateNewStock);
-
-        function updateNewStock() {
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const quantity = parseFloat(quantityInput.value) || 0;
-
-            if (selectedOption.value && quantity > 0) {
-                const currentStock = parseFloat(selectedOption.dataset.currentStock) || 0;
-                const unit = selectedOption.dataset.unit;
-                const newStock = currentStock + quantity;
-
-                newStockValue.textContent = `${newStock.toLocaleString()} ${unit}`;
-            } else {
-                newStockValue.textContent = '';
-            }
-        }
-
-        // Handle purchase order selection
         purchaseSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+            const purchaseId = this.value;
 
-            if (selectedOption.value) {
-                try {
-                    const items = JSON.parse(selectedOption.dataset.items || '[]');
-
-                    if (items.length > 0) {
-                        purchaseItemsList.innerHTML = '';
-                        items.forEach(item => {
-                            const itemDiv = document.createElement('div');
-                            itemDiv.className = 'flex justify-between items-center text-sm';
-                            itemDiv.innerHTML = `
-                            <span class="text-blue-800">${item.product_name}</span>
-                            <span class="font-medium">${item.quantity} ${item.unit}</span>
-                        `;
-                            purchaseItemsList.appendChild(itemDiv);
-                        });
-                        purchaseItemsInfo.classList.remove('hidden');
-                    } else {
-                        purchaseItemsInfo.classList.add('hidden');
-                    }
-                } catch (e) {
-                    console.error('Error parsing purchase items:', e);
-                    purchaseItemsInfo.classList.add('hidden');
-                }
-            } else {
-                purchaseItemsInfo.classList.add('hidden');
+            if (!purchaseId) {
+                purchaseInfo.classList.add('hidden');
+                productSection.classList.add('hidden');
+                submitBtn.disabled = true;
+                return;
             }
+
+            // Show purchase info
+            const selectedOption = this.options[this.selectedIndex];
+            document.getElementById('vendorName').textContent = selectedOption.dataset.vendor;
+            document.getElementById('purchaseDate').textContent = selectedOption.dataset.date;
+            purchaseInfo.classList.remove('hidden');
+
+            // Load purchase items
+            loadPurchaseItems(purchaseId);
         });
 
-        // Initialize if there's a selected product
-        if (productSelect.value) {
-            productSelect.dispatchEvent(new Event('change'));
+        function loadPurchaseItems(purchaseId) {
+            fetch(`<?= base_url('/incoming-items/get-purchase-items') ?>/${purchaseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        displayPurchaseItems(data);
+                        productSection.classList.remove('hidden');
+                    } else {
+                        productList.innerHTML = '<p class="text-gray-500 text-center py-4">Tidak ada produk yang perlu diterima</p>';
+                        productSection.classList.remove('hidden');
+                        submitBtn.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading purchase items:', error);
+                    productList.innerHTML = '<p class="text-red-500 text-center py-4">Gagal memuat data produk</p>';
+                    productSection.classList.remove('hidden');
+                    submitBtn.disabled = true;
+                });
         }
 
-        // Initialize if there's a selected purchase
-        if (purchaseSelect.value) {
-            purchaseSelect.dispatchEvent(new Event('change'));
+        function displayPurchaseItems(items) {
+            selectedProducts = [];
+            let html = '';
+
+            items.forEach((item, index) => {
+                const remainingQty = item.quantity - (item.received_quantity || 0);
+
+                if (remainingQty > 0) {
+                    html += `
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${item.product_name}</h4>
+                            <p class="text-sm text-gray-600">
+                                Dibeli: ${parseInt(item.quantity)} ${item.unit} | 
+                                Diterima: ${parseInt(item.received_quantity || 0)} ${item.unit} | 
+                                Sisa: ${parseInt(remainingQty)} ${item.unit}
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" 
+                                   id="product_${item.product_id}" 
+                                   data-product-id="${item.product_id}"
+                                   data-max-qty="${remainingQty}"
+                                   data-unit="${item.unit}"
+                                   class="product-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="product_${item.product_id}" class="text-sm font-medium text-gray-700">
+                                Terima
+                            </label>
+                        </div>
+                    </div>
+                `;
+                }
+            });
+
+            if (html === '') {
+                html = '<p class="text-gray-500 text-center py-4">Semua produk sudah diterima lengkap</p>';
+                submitBtn.disabled = true;
+            } else {
+                html += `
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                        <p class="text-sm text-yellow-800">
+                            Pilih produk yang akan diterima. Kuantitas akan otomatis disesuaikan dengan sisa yang belum diterima.
+                        </p>
+                    </div>
+                </div>
+            `;
+            }
+
+            productList.innerHTML = html;
+
+            // Add event listeners for checkboxes
+            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedProducts);
+            });
         }
 
-        // Form validation
-        document.getElementById('incomingForm').addEventListener('submit', function(e) {
-            const product = productSelect.value;
-            const quantity = parseFloat(quantityInput.value);
-            const date = document.getElementById('date').value;
+        function updateSelectedProducts() {
+            selectedProducts = [];
+            const checkboxes = document.querySelectorAll('.product-checkbox:checked');
 
-            if (!product) {
+            checkboxes.forEach(checkbox => {
+                selectedProducts.push({
+                    product_id: checkbox.dataset.productId,
+                    quantity: parseInt(checkbox.dataset.maxQty),
+                    unit: checkbox.dataset.unit
+                });
+            });
+
+            submitBtn.disabled = selectedProducts.length === 0;
+        }
+
+        form.addEventListener('submit', function(e) {
+            if (selectedProducts.length === 0) {
                 e.preventDefault();
-                alert('Silakan pilih produk terlebih dahulu');
-                productSelect.focus();
+                alert('Pilih minimal satu produk untuk diterima');
                 return;
             }
 
-            if (!quantity || quantity <= 0) {
-                e.preventDefault();
-                alert('Silakan masukkan kuantitas yang valid');
-                quantityInput.focus();
-                return;
-            }
-
-            if (!date) {
-                e.preventDefault();
-                alert('Silakan pilih tanggal');
-                document.getElementById('date').focus();
-                return;
-            }
-
-            // Show loading state
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
-            submitBtn.disabled = true;
-
-            // Re-enable button after 5 seconds as fallback
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 5000);
+            // Create hidden inputs for selected products
+            selectedProducts.forEach(product => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_products[]';
+                input.value = JSON.stringify(product);
+                form.appendChild(input);
+            });
         });
     });
 </script>

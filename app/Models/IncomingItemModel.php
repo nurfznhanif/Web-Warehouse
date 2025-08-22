@@ -22,9 +22,9 @@ class IncomingItemModel extends Model
 
     protected $validationRules = [
         'product_id' => 'required|integer',
+        'purchase_id' => 'required|integer',
         'date' => 'required|valid_date',
         'quantity' => 'required|decimal|greater_than[0]',
-        'purchase_id' => 'permit_empty|integer',
         'notes' => 'permit_empty|max_length[500]',
         'user_id' => 'required|integer'
     ];
@@ -33,6 +33,10 @@ class IncomingItemModel extends Model
         'product_id' => [
             'required' => 'Produk harus dipilih',
             'integer' => 'Produk tidak valid'
+        ],
+        'purchase_id' => [
+            'required' => 'Pembelian harus dipilih',
+            'integer' => 'Pembelian tidak valid'
         ],
         'date' => [
             'required' => 'Tanggal harus diisi',
@@ -43,9 +47,6 @@ class IncomingItemModel extends Model
             'decimal' => 'Jumlah harus berupa angka',
             'greater_than' => 'Jumlah harus lebih dari 0'
         ],
-        'purchase_id' => [
-            'integer' => 'Purchase ID tidak valid'
-        ],
         'notes' => [
             'max_length' => 'Catatan maksimal 500 karakter'
         ],
@@ -55,32 +56,29 @@ class IncomingItemModel extends Model
         ]
     ];
 
-    /**
-     * Get incoming items with complete details
-     * ✅ FIXED - menggunakan products.stock bukan current_stock
-     */
-    public function getIncomingItemsWithDetails($limit = null, $offset = null, $search = null, $startDate = null, $endDate = null)
+    public function getIncomingItemsWithDetails($limit = null, $offset = null, $search = null, $startDate = null, $endDate = null, $productId = null)
     {
         $builder = $this->select('incoming_items.*, 
                                  products.name as product_name, 
                                  products.code as product_code,
                                  products.unit,
-                                 products.stock,
                                  categories.name as category_name,
                                  purchases.id as purchase_number,
+                                 purchases.purchase_date,
                                  vendors.name as vendor_name,
                                  users.full_name as user_name')
             ->join('products', 'products.id = incoming_items.product_id')
-            ->join('categories', 'categories.id = products.category_id', 'left')
-            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-            ->join('users', 'users.id = incoming_items.user_id', 'left');
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id')
+            ->join('vendors', 'vendors.id = purchases.vendor_id')
+            ->join('users', 'users.id = incoming_items.user_id');
 
         if ($search) {
             $builder->groupStart()
                 ->like('products.name', $search)
                 ->orLike('products.code', $search)
                 ->orLike('vendors.name', $search)
+                ->orLike('purchases.id', $search)
                 ->groupEnd();
         }
 
@@ -90,6 +88,10 @@ class IncomingItemModel extends Model
 
         if ($endDate) {
             $builder->where('DATE(incoming_items.date) <=', $endDate);
+        }
+
+        if ($productId) {
+            $builder->where('incoming_items.product_id', $productId);
         }
 
         $builder->orderBy('incoming_items.date', 'DESC');
@@ -101,21 +103,19 @@ class IncomingItemModel extends Model
         return $builder->findAll();
     }
 
-    /**
-     * Count incoming items with details for pagination
-     */
-    public function countIncomingItemsWithDetails($search = null, $startDate = null, $endDate = null)
+    public function countIncomingItemsWithDetails($search = null, $startDate = null, $endDate = null, $productId = null)
     {
         $builder = $this->join('products', 'products.id = incoming_items.product_id')
-            ->join('categories', 'categories.id = products.category_id', 'left')
-            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left');
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id')
+            ->join('vendors', 'vendors.id = purchases.vendor_id');
 
         if ($search) {
             $builder->groupStart()
                 ->like('products.name', $search)
                 ->orLike('products.code', $search)
                 ->orLike('vendors.name', $search)
+                ->orLike('purchases.id', $search)
                 ->groupEnd();
         }
 
@@ -127,285 +127,218 @@ class IncomingItemModel extends Model
             $builder->where('DATE(incoming_items.date) <=', $endDate);
         }
 
+        if ($productId) {
+            $builder->where('incoming_items.product_id', $productId);
+        }
+
         return $builder->countAllResults();
     }
 
-    /**
-     * Get single incoming item with details
-     * ✅ FIXED - menggunakan products.stock bukan current_stock
-     */
     public function getIncomingItemWithDetails($id)
     {
         return $this->select('incoming_items.*, 
                              products.name as product_name, 
                              products.code as product_code,
                              products.unit,
-                             products.stock,
                              categories.name as category_name,
                              purchases.id as purchase_number,
+                             purchases.purchase_date,
                              vendors.name as vendor_name,
                              users.full_name as user_name')
             ->join('products', 'products.id = incoming_items.product_id')
-            ->join('categories', 'categories.id = products.category_id', 'left')
-            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-            ->join('users', 'users.id = incoming_items.user_id', 'left')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id')
+            ->join('vendors', 'vendors.id = purchases.vendor_id')
+            ->join('users', 'users.id = incoming_items.user_id')
             ->where('incoming_items.id', $id)
             ->first();
     }
 
-    /**
-     * Add incoming item with stock management
-     * HANYA SATU METHOD INI - TIDAK ADA DUPLIKASI!
-     */
+    public function addIncomingItemSimple($data)
+    {
+        // Method sederhana untuk insert data tanpa logic tambahan
+        // Digunakan ketika validasi sudah dilakukan di controller
+        return $this->insert($data);
+    }
+
     public function addIncomingItem($data)
     {
-        $db = \Config\Database::connect();
-        $db->transStart();
+        // Method lengkap dengan validasi TANPA update stok
+        // Update stok akan dilakukan di controller
+
+        $this->db->transStart();
 
         try {
-            // Validate purchase order if provided
-            if (!empty($data['purchase_id'])) {
-                $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
-                $purchaseDetail = $purchaseDetailModel->where('purchase_id', $data['purchase_id'])
-                    ->where('product_id', $data['product_id'])
-                    ->first();
+            // Validasi pembelian harus ada dan berstatus pending
+            $purchaseModel = new \App\Models\PurchaseModel();
+            $purchase = $purchaseModel->find($data['purchase_id']);
 
-                if (!$purchaseDetail) {
-                    throw new \Exception('Produk tidak ditemukan dalam purchase order yang dipilih');
-                }
-
-                // Check if total received quantity doesn't exceed purchased quantity
-                $totalReceived = $this->where('purchase_id', $data['purchase_id'])
-                    ->where('product_id', $data['product_id'])
-                    ->selectSum('quantity')
-                    ->first()['quantity'] ?? 0;
-
-                if (($totalReceived + $data['quantity']) > $purchaseDetail['quantity']) {
-                    throw new \Exception('Jumlah yang diterima melebihi jumlah dalam purchase order');
-                }
+            if (!$purchase) {
+                throw new \Exception('Pembelian tidak ditemukan');
             }
 
-            // Insert incoming item
-            $this->insert($data);
-            $incomingId = $this->getInsertID();
+            if ($purchase['status'] !== 'pending') {
+                throw new \Exception('Pembelian sudah diproses atau dibatalkan');
+            }
 
+            // Validasi produk ada dalam detail pembelian
+            $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
+            $purchaseDetail = $purchaseDetailModel->where('purchase_id', $data['purchase_id'])
+                ->where('product_id', $data['product_id'])
+                ->first();
+
+            if (!$purchaseDetail) {
+                throw new \Exception('Produk tidak ditemukan dalam pembelian yang dipilih');
+            }
+
+            // Cek total kuantitas yang sudah diterima sebelumnya
+            $totalReceived = $this->where('purchase_id', $data['purchase_id'])
+                ->where('product_id', $data['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
+            $newTotal = $totalReceived + $data['quantity'];
+
+            // Kuantitas tidak boleh melebihi yang dibeli
+            if ($newTotal > $purchaseDetail['quantity']) {
+                throw new \Exception('Jumlah penerimaan (' . $newTotal . ') melebihi jumlah pembelian (' . $purchaseDetail['quantity'] . ')');
+            }
+
+            // Insert data barang masuk SAJA - tanpa update stok dan status
+            $incomingId = $this->insert($data);
             if (!$incomingId) {
                 throw new \Exception('Gagal menyimpan data barang masuk');
             }
 
-            // Update product stock
-            $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($data['product_id']);
+            $this->db->transComplete();
 
-            if (!$product) {
-                throw new \Exception('Produk tidak ditemukan');
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
             }
 
-            $newStock = $product['stock'] + $data['quantity'];
-            $updateStock = $productModel->update($data['product_id'], ['stock' => $newStock]);
-
-            if (!$updateStock) {
-                throw new \Exception('Gagal mengupdate stok produk');
-            }
-
-            // Update purchase order status if applicable
-            if (!empty($data['purchase_id'])) {
-                $this->updatePurchaseOrderProgress($data['purchase_id']);
-            }
-
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
-                throw new \Exception('Transaksi gagal disimpan');
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Barang masuk berhasil dicatat dan stok produk telah diperbarui',
-                'incoming_id' => $incomingId
-            ];
+            return ['success' => true, 'message' => 'Data barang masuk berhasil disimpan', 'id' => $incomingId];
         } catch (\Exception $e) {
-            $db->transRollback();
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            $this->db->transRollback();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * Update incoming item with stock adjustment
-     * HANYA SATU METHOD INI - TIDAK ADA DUPLIKASI!
-     */
     public function updateIncomingItem($id, $data)
     {
-        $db = \Config\Database::connect();
-        $db->transStart();
+        $this->db->transStart();
 
         try {
-            // Get original data
-            $originalItem = $this->find($id);
-            if (!$originalItem) {
-                throw new \Exception('Data barang masuk tidak ditemukan');
+            $item = $this->find($id);
+            if (!$item) {
+                throw new \Exception('Item tidak ditemukan');
             }
 
-            // Validate if product is changed and exists
-            if (isset($data['product_id']) && $data['product_id'] != $originalItem['product_id']) {
-                $productModel = new \App\Models\ProductModel();
-                $newProduct = $productModel->find($data['product_id']);
-                if (!$newProduct) {
-                    throw new \Exception('Produk baru tidak ditemukan');
+            // Hanya boleh update notes dan user_id
+            $allowedFields = ['notes', 'user_id'];
+            $updateData = [];
+
+            foreach ($allowedFields as $field) {
+                if (isset($data[$field])) {
+                    $updateData[$field] = $data[$field];
                 }
             }
 
-            // Update incoming item
-            $updateResult = $this->update($id, $data);
-            if (!$updateResult) {
-                throw new \Exception('Gagal mengupdate data barang masuk');
+            if (empty($updateData)) {
+                throw new \Exception('Tidak ada data yang dapat diupdate');
             }
 
-            // Calculate and apply stock adjustments
-            $productModel = new \App\Models\ProductModel();
-
-            // If product changed
-            if (isset($data['product_id']) && $originalItem['product_id'] != $data['product_id']) {
-                // Reduce stock from original product
-                $originalProduct = $productModel->find($originalItem['product_id']);
-                $newOriginalStock = $originalProduct['stock'] - $originalItem['quantity'];
-                $productModel->update($originalItem['product_id'], ['stock' => $newOriginalStock]);
-
-                // Add stock to new product
-                $newProduct = $productModel->find($data['product_id']);
-                $newProductStock = $newProduct['stock'] + $data['quantity'];
-                $productModel->update($data['product_id'], ['stock' => $newProductStock]);
-            } else {
-                // Same product, adjust quantity difference
-                $quantityDiff = $data['quantity'] - $originalItem['quantity'];
-                if ($quantityDiff != 0) {
-                    $product = $productModel->find($originalItem['product_id']);
-                    $newStock = $product['stock'] + $quantityDiff;
-                    if ($newStock < 0) {
-                        throw new \Exception('Stok tidak boleh menjadi negatif');
-                    }
-                    $productModel->update($originalItem['product_id'], ['stock' => $newStock]);
-                }
+            if (!$this->update($id, $updateData)) {
+                throw new \Exception('Gagal memperbarui data');
             }
 
-            $db->transComplete();
+            $this->db->transComplete();
 
-            if ($db->transStatus() === false) {
+            if ($this->db->transStatus() === false) {
                 throw new \Exception('Transaksi gagal');
             }
 
-            return [
-                'success' => true,
-                'message' => 'Data barang masuk berhasil diperbarui dan stok disesuaikan'
-            ];
+            return ['success' => true, 'message' => 'Data berhasil diperbarui'];
         } catch (\Exception $e) {
-            $db->transRollback();
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            $this->db->transRollback();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * Delete incoming item with stock adjustment
-     * HANYA SATU METHOD INI - TIDAK ADA DUPLIKASI!
-     */
     public function deleteIncomingItem($id)
     {
-        $db = \Config\Database::connect();
-        $db->transStart();
+        $this->db->transStart();
 
         try {
-            // Get original data
-            $incomingItem = $this->find($id);
-            if (!$incomingItem) {
-                throw new \Exception('Data barang masuk tidak ditemukan');
+            $item = $this->find($id);
+            if (!$item) {
+                throw new \Exception('Item tidak ditemukan');
             }
 
-            // Check if we can reduce stock
+            // Hapus data barang masuk
+            if (!$this->delete($id)) {
+                throw new \Exception('Gagal menghapus item');
+            }
+
+            // Kurangi stok produk
             $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($incomingItem['product_id']);
+            $product = $productModel->find($item['product_id']);
+            $newStock = $product['stock'] - $item['quantity'];
 
-            if (!$product) {
-                throw new \Exception('Produk tidak ditemukan');
+            if ($newStock < 0) {
+                throw new \Exception('Penghapusan akan menyebabkan stok negatif');
             }
 
-            if ($product['stock'] < $incomingItem['quantity']) {
-                throw new \Exception('Tidak dapat menghapus: stok produk akan menjadi negatif');
+            if (!$productModel->update($item['product_id'], ['stock' => $newStock])) {
+                throw new \Exception('Gagal memperbarui stok produk');
             }
 
-            // Reduce stock
-            $newStock = $product['stock'] - $incomingItem['quantity'];
-            $updateStock = $productModel->update($incomingItem['product_id'], ['stock' => $newStock]);
+            // Jika item ini dari pembelian, kembalikan status pembelian ke pending
+            if ($item['purchase_id']) {
+                $purchaseModel = new \App\Models\PurchaseModel();
+                $purchase = $purchaseModel->find($item['purchase_id']);
 
-            if (!$updateStock) {
-                throw new \Exception('Gagal mengupdate stok produk');
+                if ($purchase && $purchase['status'] === 'received') {
+                    $purchaseModel->update($item['purchase_id'], ['status' => 'pending']);
+                }
             }
 
-            // Delete incoming item
-            $deleteResult = $this->delete($id);
-            if (!$deleteResult) {
-                throw new \Exception('Gagal menghapus data barang masuk');
-            }
+            $this->db->transComplete();
 
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
+            if ($this->db->transStatus() === false) {
                 throw new \Exception('Transaksi gagal');
             }
 
-            return [
-                'success' => true,
-                'message' => 'Data barang masuk berhasil dihapus dan stok disesuaikan'
-            ];
+            return ['success' => true];
         } catch (\Exception $e) {
-            $db->transRollback();
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            $this->db->transRollback();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * Get incoming history for a specific product
-     */
-    public function getIncomingHistory($productId, $limit = null)
+    private function checkPurchaseCompletion($purchaseId)
     {
-        $builder = $this->select('incoming_items.*, 
-                                 products.name as product_name, 
-                                 products.code as product_code,
-                                 products.unit,
-                                 purchases.id as purchase_number,
-                                 vendors.name as vendor_name,
-                                 users.full_name as user_name')
-            ->join('products', 'products.id = incoming_items.product_id')
-            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
-            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
-            ->join('users', 'users.id = incoming_items.user_id', 'left')
-            ->where('incoming_items.product_id', $productId)
-            ->orderBy('incoming_items.date', 'DESC');
+        $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
+        $purchaseDetails = $purchaseDetailModel->where('purchase_id', $purchaseId)->findAll();
 
-        if ($limit) {
-            $builder->limit($limit);
+        foreach ($purchaseDetails as $detail) {
+            $receivedQty = $this->where('purchase_id', $purchaseId)
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
+            if ($receivedQty < $detail['quantity']) {
+                return false; // Masih ada yang belum diterima lengkap
+            }
         }
 
-        return $builder->findAll();
+        return true; // Semua sudah diterima lengkap
     }
 
-    /**
-     * Get incoming statistics for dashboard
-     */
     public function getIncomingStatistics()
     {
         $stats = [];
 
-        // Total items
+        // Total incoming items
         $stats['total_items'] = $this->countAll();
 
         // Today's incoming
@@ -435,158 +368,37 @@ class IncomingItemModel extends Model
         return $stats;
     }
 
-    /**
-     * Get recent incoming items for dashboard
-     */
     public function getRecentIncoming($limit = 5)
     {
         return $this->select('incoming_items.*, 
-                             products.name as product_name,
-                             products.unit')
+                             products.name as product_name, 
+                             products.code as product_code,
+                             products.unit,
+                             users.full_name as user_name')
             ->join('products', 'products.id = incoming_items.product_id')
-            ->orderBy('incoming_items.date', 'DESC')
+            ->join('users', 'users.id = incoming_items.user_id')
+            ->orderBy('incoming_items.created_at', 'DESC')
             ->limit($limit)
             ->findAll();
     }
 
-    /**
-     * Get daily incoming data for charts
-     */
-    public function getDailyIncomingData($days = 30)
+    public function getIncomingByProduct($productId, $limit = null)
     {
-        $startDate = date('Y-m-d', strtotime("-{$days} days"));
+        $builder = $this->select('incoming_items.*, 
+                                 purchases.id as purchase_number,
+                                 purchases.purchase_date,
+                                 vendors.name as vendor_name,
+                                 users.full_name as user_name')
+            ->join('purchases', 'purchases.id = incoming_items.purchase_id', 'left')
+            ->join('vendors', 'vendors.id = purchases.vendor_id', 'left')
+            ->join('users', 'users.id = incoming_items.user_id', 'left')
+            ->where('incoming_items.product_id', $productId)
+            ->orderBy('incoming_items.date', 'DESC');
 
-        $results = $this->select("DATE(date) as date, 
-                                 COUNT(*) as count, 
-                                 SUM(quantity) as quantity")
-            ->where('DATE(date) >=', $startDate)
-            ->groupBy('DATE(date)')
-            ->orderBy('date', 'ASC')
-            ->findAll();
-
-        // Fill missing dates with zero values
-        $dailyData = [];
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date = date('Y-m-d', strtotime("-{$i} days"));
-            $dateLabel = date('M j', strtotime($date));
-
-            $found = false;
-            foreach ($results as $result) {
-                if ($result['date'] === $date) {
-                    $dailyData[] = [
-                        'date' => $dateLabel,
-                        'count' => (int)$result['count'],
-                        'quantity' => (float)$result['quantity']
-                    ];
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (!$found) {
-                $dailyData[] = [
-                    'date' => $dateLabel,
-                    'count' => 0,
-                    'quantity' => 0
-                ];
-            }
+        if ($limit) {
+            $builder->limit($limit);
         }
 
-        return $dailyData;
-    }
-
-    /**
-     * Update purchase order progress based on received items
-     * PRIVATE METHOD - tidak duplikat
-     */
-    private function updatePurchaseOrderProgress($purchaseId)
-    {
-        try {
-            $purchaseModel = new \App\Models\PurchaseModel();
-            $purchaseDetailModel = new \App\Models\PurchaseDetailModel();
-
-            // Get all purchase details
-            $purchaseDetails = $purchaseDetailModel->where('purchase_id', $purchaseId)->findAll();
-
-            if (empty($purchaseDetails)) {
-                return;
-            }
-
-            $totalExpected = 0;
-            $totalReceived = 0;
-
-            foreach ($purchaseDetails as $detail) {
-                $totalExpected += $detail['quantity'];
-
-                // Get total received for this product from this purchase
-                $received = $this->where('purchase_id', $purchaseId)
-                    ->where('product_id', $detail['product_id'])
-                    ->selectSum('quantity')
-                    ->first();
-
-                $totalReceived += $received['quantity'] ?? 0;
-            }
-
-            // Calculate progress percentage
-            $progress = $totalExpected > 0 ? ($totalReceived / $totalExpected) * 100 : 0;
-
-            // Update status based on progress
-            $status = 'pending';
-            if ($progress >= 100) {
-                $status = 'completed';
-            } elseif ($progress > 0) {
-                $status = 'partial';
-            }
-
-            $purchaseModel->update($purchaseId, [
-                'status' => $status,
-                'progress' => min(100, round($progress, 2))
-            ]);
-        } catch (\Exception $e) {
-            // Log error but don't fail the main transaction
-            log_message('error', 'Failed to update purchase progress: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Bulk insert for import functionality
-     */
-    public function bulkInsert($items)
-    {
-        $db = \Config\Database::connect();
-        $db->transStart();
-
-        $successCount = 0;
-        $errors = [];
-
-        try {
-            foreach ($items as $index => $item) {
-                $result = $this->addIncomingItem($item);
-                if ($result['success']) {
-                    $successCount++;
-                } else {
-                    $errors[] = "Row " . ($index + 1) . ": " . $result['message'];
-                }
-            }
-
-            $db->transComplete();
-
-            if ($db->transStatus() === false) {
-                throw new \Exception('Bulk insert transaction failed');
-            }
-
-            return [
-                'success' => true,
-                'success_count' => $successCount,
-                'errors' => $errors
-            ];
-        } catch (\Exception $e) {
-            $db->transRollback();
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'errors' => $errors
-            ];
-        }
+        return $builder->findAll();
     }
 }

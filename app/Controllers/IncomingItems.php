@@ -58,9 +58,9 @@ class IncomingItems extends BaseController
 
     public function create()
     {
+        // Hanya tampilkan pembelian dengan status 'pending'
         $data = [
             'title' => 'Tambah Barang Masuk - Vadhana Warehouse',
-            'products' => $this->productModel->getProductsForSelect(),
             'purchases' => $this->purchaseModel->getPurchasesWithDetails(null, null, null, 'pending'),
             'validation' => session()->getFlashdata('validation')
         ];
@@ -71,10 +71,9 @@ class IncomingItems extends BaseController
     public function store()
     {
         $rules = [
-            'product_id' => 'required|integer',
+            'purchase_id' => 'required|integer',
             'date' => 'required|valid_date',
-            'quantity' => 'required|decimal|greater_than[0]',
-            'purchase_id' => 'permit_empty|integer',
+            'selected_products' => 'required',
             'notes' => 'permit_empty|max_length[500]'
         ];
 
@@ -84,45 +83,105 @@ class IncomingItems extends BaseController
                 ->with('validation', $this->validator);
         }
 
-        $data = [
-            'product_id' => $this->request->getPost('product_id'),
-            'purchase_id' => $this->request->getPost('purchase_id') ?: null,
-            'date' => $this->request->getPost('date') . ' ' . date('H:i:s'),
-            'quantity' => $this->request->getPost('quantity'),
-            'notes' => $this->request->getPost('notes'),
-            'user_id' => session()->get('user_id')
-        ];
+        $purchaseId = $this->request->getPost('purchase_id');
+        $selectedProducts = $this->request->getPost('selected_products');
+        $date = $this->request->getPost('date');
+        $notes = $this->request->getPost('notes');
 
-        $result = $this->incomingModel->addIncomingItem($data);
-
-        if ($result['success']) {
-            session()->setFlashdata('success', 'Barang masuk berhasil dicatat dan stok produk telah diperbarui');
-            return redirect()->to('/incoming-items');
-        } else {
-            session()->setFlashdata('error', $result['message']);
+        // Validasi pembelian masih dalam status pending
+        $purchase = $this->purchaseModel->find($purchaseId);
+        if (!$purchase || $purchase['status'] !== 'pending') {
+            session()->setFlashdata('error', 'Pembelian tidak valid atau sudah diproses');
             return redirect()->back()->withInput();
         }
-    }
 
-    public function view($id)
-    {
-        $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-
-        if (!$incomingItem) {
-            session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
-            return redirect()->to('/incoming-items');
+        // Decode selected products
+        $incomingItems = [];
+        foreach ($selectedProducts as $productJson) {
+            $product = json_decode($productJson, true);
+            if ($product) {
+                $incomingItems[] = [
+                    'product_id' => $product['product_id'],
+                    'purchase_id' => $purchaseId,
+                    'date' => $date . ' ' . date('H:i:s'),
+                    'quantity' => $product['quantity'],
+                    'notes' => $notes,
+                    'user_id' => session()->get('user_id')
+                ];
+            }
         }
 
-        // Get current stock for the product
-        $product = $this->productModel->find($incomingItem['product_id']);
-        $incomingItem['stock'] = $product['stock'] ?? 0;
+        if (empty($incomingItems)) {
+            session()->setFlashdata('error', 'Tidak ada produk yang dipilih');
+            return redirect()->back()->withInput();
+        }
 
-        $data = [
-            'title' => 'Detail Barang Masuk #' . $id . ' - Vadhana Warehouse',
-            'incoming_item' => $incomingItem
-        ];
+        // PERBAIKAN: Gunakan satu transaksi database saja
+        $db = \Config\Database::connect();
+        $db->transStart();
 
-        return view('incoming_items/view', $data);
+        try {
+            foreach ($incomingItems as $item) {
+                // Validasi produk ada dalam pembelian
+                $purchaseDetail = $this->purchaseDetailModel
+                    ->where('purchase_id', $purchaseId)
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                if (!$purchaseDetail) {
+                    throw new \Exception('Produk tidak ditemukan dalam pembelian yang dipilih');
+                }
+
+                // Cek total yang sudah diterima
+                $totalReceived = $this->incomingModel
+                    ->where('purchase_id', $purchaseId)
+                    ->where('product_id', $item['product_id'])
+                    ->selectSum('quantity')
+                    ->first()['quantity'] ?? 0;
+
+                $newTotal = $totalReceived + $item['quantity'];
+
+                if ($newTotal > $purchaseDetail['quantity']) {
+                    throw new \Exception('Jumlah penerimaan melebihi jumlah pembelian');
+                }
+
+                // 1. Insert data incoming item saja
+                // Stok akan otomatis terupdate oleh database trigger
+                if (!$this->incomingModel->insert($item)) {
+                    throw new \Exception('Gagal menyimpan data barang masuk');
+                }
+
+                // HAPUS: Update stok manual karena sudah ada trigger
+                // Database trigger akan otomatis update stok
+            }
+
+            // 2. Check apakah semua item sudah diterima lengkap
+            $allReceived = $this->checkIfPurchaseFullyReceived($purchaseId);
+
+            if ($allReceived) {
+                if (!$this->purchaseModel->update($purchaseId, ['status' => 'received'])) {
+                    throw new \Exception('Gagal memperbarui status pembelian');
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi database gagal');
+            }
+
+            $message = count($incomingItems) . ' produk berhasil diterima dan stok telah diperbarui';
+            if ($allReceived) {
+                $message .= '. Status pembelian telah diubah menjadi RECEIVED.';
+            }
+
+            session()->setFlashdata('success', $message);
+            return redirect()->to('/incoming-items');
+        } catch (\Exception $e) {
+            $db->transRollback();
+            session()->setFlashdata('error', $e->getMessage());
+            return redirect()->back()->withInput();
+        }
     }
 
     public function edit($id)
@@ -135,10 +194,8 @@ class IncomingItems extends BaseController
         }
 
         $data = [
-            'title' => 'Edit Barang Masuk - Warehouse Management System',
+            'title' => 'Edit Barang Masuk - Vadhana Warehouse',
             'incoming_item' => $incomingItem,
-            'products' => $this->productModel->getProductsForSelect(),
-            'purchases' => $this->purchaseModel->getPurchasesWithDetails(),
             'validation' => session()->getFlashdata('validation')
         ];
 
@@ -155,10 +212,6 @@ class IncomingItems extends BaseController
         }
 
         $rules = [
-            'product_id' => 'required|integer',
-            'date' => 'required|valid_date',
-            'quantity' => 'required|decimal|greater_than[0]',
-            'purchase_id' => 'permit_empty|integer',
             'notes' => 'permit_empty|max_length[500]'
         ];
 
@@ -168,31 +221,25 @@ class IncomingItems extends BaseController
                 ->with('validation', $this->validator);
         }
 
+        // Hanya update notes dan user_id, tidak boleh mengubah purchase_id, product_id, quantity
         $data = [
-            'product_id' => $this->request->getPost('product_id'),
-            'purchase_id' => $this->request->getPost('purchase_id') ?: null,
-            'date' => $this->request->getPost('date') . ' ' . date('H:i:s'),
-            'quantity' => $this->request->getPost('quantity'),
-            'notes' => $this->request->getPost('notes')
+            'notes' => $this->request->getPost('notes'),
+            'user_id' => session()->get('user_id')
         ];
 
-        $result = $this->incomingModel->updateIncomingItem($id, $data);
-
-        if ($result['success']) {
-            session()->setFlashdata('success', 'Data barang masuk berhasil diperbarui dan stok produk telah disesuaikan');
-            return redirect()->to('/incoming-items');
+        if ($this->incomingModel->update($id, $data)) {
+            session()->setFlashdata('success', 'Data barang masuk berhasil diperbarui');
         } else {
-            session()->setFlashdata('error', $result['message']);
-            return redirect()->back()->withInput();
+            session()->setFlashdata('error', 'Gagal memperbarui data barang masuk');
         }
+
+        return redirect()->to('/incoming-items');
     }
 
     public function delete($id)
     {
-        $incomingItem = $this->incomingModel->find($id);
-
-        if (!$incomingItem) {
-            session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
+        if (!$this->isAdmin()) {
+            session()->setFlashdata('error', 'Hanya admin yang dapat menghapus data barang masuk');
             return redirect()->to('/incoming-items');
         }
 
@@ -207,7 +254,102 @@ class IncomingItems extends BaseController
         return redirect()->to('/incoming-items');
     }
 
-    public function printReceipt($id)
+    public function getPurchaseItems($purchaseId)
+    {
+        // Validasi pembelian
+        $purchase = $this->purchaseModel->find($purchaseId);
+        if (!$purchase || $purchase['status'] !== 'pending') {
+            return $this->response->setJSON([]);
+        }
+
+        $purchaseDetails = $this->purchaseDetailModel->getDetailsByPurchase($purchaseId);
+
+        // Get already received quantities for each product
+        foreach ($purchaseDetails as &$detail) {
+            $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
+            $detail['received_quantity'] = $receivedQty;
+            $detail['remaining_quantity'] = $detail['quantity'] - $receivedQty;
+        }
+
+        return $this->response->setJSON($purchaseDetails);
+    }
+
+    private function processIncomingFromPurchase($purchaseId, $incomingItems)
+    {
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // Validasi setiap item dan insert data
+            foreach ($incomingItems as $item) {
+                // Gunakan method addIncomingItem yang sudah tidak update stok
+                $result = $this->incomingModel->addIncomingItem($item);
+
+                if (!$result['success']) {
+                    throw new \Exception($result['message']);
+                }
+
+                // Update stok produk hanya di sini
+                $product = $this->productModel->find($item['product_id']);
+                $newStock = $product['stock'] + $item['quantity'];
+
+                if (!$this->productModel->update($item['product_id'], ['stock' => $newStock])) {
+                    throw new \Exception('Gagal memperbarui stok produk');
+                }
+            }
+
+            // Check apakah semua item sudah diterima lengkap
+            $allReceived = $this->checkIfPurchaseFullyReceived($purchaseId);
+
+            if ($allReceived) {
+                // Update status pembelian menjadi 'received'
+                if (!$this->purchaseModel->update($purchaseId, ['status' => 'received'])) {
+                    throw new \Exception('Gagal memperbarui status pembelian');
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            $message = count($incomingItems) . ' produk berhasil diterima dan stok telah diperbarui';
+            if ($allReceived) {
+                $message .= '. Status pembelian telah diubah menjadi RECEIVED.';
+            }
+
+            return ['success' => true, 'message' => $message];
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function checkIfPurchaseFullyReceived($purchaseId)
+    {
+        $purchaseDetails = $this->purchaseDetailModel->where('purchase_id', $purchaseId)->findAll();
+
+        foreach ($purchaseDetails as $detail) {
+            $receivedQty = $this->incomingModel
+                ->where('purchase_id', $purchaseId)
+                ->where('product_id', $detail['product_id'])
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
+
+            if ($receivedQty < $detail['quantity']) {
+                return false; // Masih ada yang belum diterima lengkap
+            }
+        }
+
+        return true; // Semua sudah diterima lengkap
+    }
+
+    public function view($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
 
@@ -217,11 +359,159 @@ class IncomingItems extends BaseController
         }
 
         $data = [
-            'title' => 'Receipt Barang Masuk #' . $id,
+            'title' => 'Detail Barang Masuk #' . str_pad($id, 6, '0', STR_PAD_LEFT),
+            'incoming_item' => $incomingItem
+        ];
+
+        return view('incoming_items/view', $data);
+    }
+
+    public function receipt($id)
+    {
+        $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
+
+        if (!$incomingItem) {
+            session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
+            return redirect()->to('/incoming-items');
+        }
+
+        $data = [
+            'title' => 'Bukti Penerimaan Barang #' . str_pad($id, 6, '0', STR_PAD_LEFT),
             'incoming_item' => $incomingItem
         ];
 
         return view('incoming_items/receipt', $data);
+    }
+
+    public function receiveFromPurchase($purchaseId)
+    {
+        $purchase = $this->purchaseModel->getPurchaseWithDetails($purchaseId);
+
+        if (!$purchase) {
+            session()->setFlashdata('error', 'Data pembelian tidak ditemukan');
+            return redirect()->to('/incoming-items');
+        }
+
+        if ($purchase['status'] === 'received') {
+            session()->setFlashdata('warning', 'Pembelian ini sudah diterima sepenuhnya');
+            return redirect()->to('/incoming-items');
+        }
+
+        // Get unreceived items
+        $unreceivedItems = $this->purchaseDetailModel->getUnreceivedItems($purchaseId);
+
+        $data = [
+            'title' => 'Terima Barang dari Pembelian #' . $purchaseId,
+            'purchase' => $purchase,
+            'unreceived_items' => $unreceivedItems
+        ];
+
+        return view('incoming_items/receive_from_purchase', $data);
+    }
+
+    public function bulkReceive()
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/incoming-items');
+        }
+
+        $purchaseId = $this->request->getPost('purchase_id');
+        $items = $this->request->getPost('items');
+
+        if (!$purchaseId || empty($items)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak valid'
+            ]);
+        }
+
+        $incomingItems = [];
+        foreach ($items as $item) {
+            if (!empty($item['selected']) && !empty($item['quantity']) && $item['quantity'] > 0) {
+                $incomingItems[] = [
+                    'product_id' => $item['product_id'],
+                    'purchase_id' => $purchaseId,
+                    'date' => date('Y-m-d H:i:s'),
+                    'quantity' => $item['quantity'],
+                    'notes' => 'Bulk receive from Purchase #' . $purchaseId,
+                    'user_id' => session()->get('user_id')
+                ];
+            }
+        }
+
+        if (empty($incomingItems)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih untuk diterima'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            foreach ($incomingItems as $item) {
+                // Validasi produk ada dalam pembelian
+                $purchaseDetail = $this->purchaseDetailModel
+                    ->where('purchase_id', $purchaseId)
+                    ->where('product_id', $item['product_id'])
+                    ->first();
+
+                if (!$purchaseDetail) {
+                    throw new \Exception('Produk tidak ditemukan dalam pembelian yang dipilih');
+                }
+
+                // Cek total yang sudah diterima
+                $totalReceived = $this->incomingModel
+                    ->where('purchase_id', $purchaseId)
+                    ->where('product_id', $item['product_id'])
+                    ->selectSum('quantity')
+                    ->first()['quantity'] ?? 0;
+
+                $newTotal = $totalReceived + $item['quantity'];
+
+                if ($newTotal > $purchaseDetail['quantity']) {
+                    throw new \Exception('Jumlah penerimaan melebihi jumlah pembelian');
+                }
+
+                // Insert data incoming item (stok akan otomatis terupdate oleh trigger)
+                if (!$this->incomingModel->insert($item)) {
+                    throw new \Exception('Gagal menyimpan data barang masuk');
+                }
+            }
+
+            // Check apakah semua item sudah diterima lengkap
+            $allReceived = $this->checkIfPurchaseFullyReceived($purchaseId);
+
+            if ($allReceived) {
+                if (!$this->purchaseModel->update($purchaseId, ['status' => 'received'])) {
+                    throw new \Exception('Gagal memperbarui status pembelian');
+                }
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi database gagal');
+            }
+
+            $message = count($incomingItems) . ' item berhasil diterima';
+            if ($allReceived) {
+                $message .= '. Status pembelian telah diubah menjadi RECEIVED.';
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'redirect' => base_url('/incoming-items')
+            ]);
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     public function history($productId)
@@ -230,10 +520,10 @@ class IncomingItems extends BaseController
 
         if (!$product) {
             session()->setFlashdata('error', 'Produk tidak ditemukan');
-            return redirect()->to('/products');
+            return redirect()->to('/incoming-items');
         }
 
-        $history = $this->incomingModel->getIncomingHistory($productId);
+        $history = $this->incomingModel->getIncomingByProduct($productId, 50);
 
         $data = [
             'title' => 'Riwayat Barang Masuk - ' . $product['name'],
@@ -241,157 +531,79 @@ class IncomingItems extends BaseController
             'history' => $history
         ];
 
+        // PERBAIKAN: Hanya return satu view saja
+        // Karena view 'incoming_items/history' sudah extend 'layouts/main'
         return view('incoming_items/history', $data);
     }
 
-    public function getPurchaseItems($purchaseId)
+    /**
+     * Mendapatkan informasi produk via AJAX
+     * 
+     * @param int $productId
+     * @return mixed
+     */
+    public function getProductInfo($productId)
     {
-        try {
-            $purchaseItems = $this->purchaseDetailModel->getPurchaseDetailsByPurchaseId($purchaseId);
-
-            $items = [];
-            foreach ($purchaseItems as $item) {
-                $items[] = [
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['product_name'],
-                    'product_code' => $item['product_code'],
-                    'quantity' => $item['quantity'],
-                    'unit' => $item['unit'],
-                    'price' => $item['price']
-                ];
-            }
-
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $items
-            ]);
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error retrieving purchase items: ' . $e->getMessage()
-            ]);
+        if (!$this->request->isAJAX()) {
+            return redirect()->to('/incoming-items');
         }
-    }
 
-    public function export()
-    {
-        $search = $this->request->getGet('search');
-        $startDate = $this->request->getGet('start_date');
-        $endDate = $this->request->getGet('end_date');
+        $product = $this->productModel->getProductWithCategory($productId);
 
-        $incomingItems = $this->incomingModel->getIncomingItemsWithDetails(null, null, $search, $startDate, $endDate);
+        if (!$product) {
+            return $this->response->setJSON(['found' => false]);
+        }
 
-        // Set headers for CSV download
-        $this->response->setHeader('Content-Type', 'text/csv');
-        $this->response->setHeader('Content-Disposition', 'attachment; filename="barang_masuk_' . date('Y-m-d') . '.csv"');
-
-        $output = fopen('php://output', 'w');
-
-        // CSV Headers
-        fputcsv($output, [
-            'No',
-            'Tanggal',
-            'Waktu',
-            'Produk',
-            'Kode Produk',
-            'Kategori',
-            'Kuantitas',
-            'Unit',
-            'Purchase Order',
-            'Vendor',
-            'User',
-            'Catatan'
+        return $this->response->setJSON([
+            'found' => true,
+            'product' => $product
         ]);
-
-        // CSV Data
-        foreach ($incomingItems as $index => $item) {
-            fputcsv($output, [
-                $index + 1,
-                date('d M Y', strtotime($item['date'])),
-                date('H:i', strtotime($item['date'])),
-                $item['product_name'],
-                $item['product_code'],
-                $item['category_name'],
-                $item['quantity'],
-                $item['unit'],
-                $item['purchase_number'] ? 'PO-' . $item['purchase_number'] : '-',
-                $item['vendor_name'] ?? '-',
-                $item['user_name'],
-                $item['notes'] ?? ''
-            ]);
-        }
-
-        fclose($output);
-        exit();
     }
 
-    public function bulkImport()
+    /**
+     * Validasi quantity via AJAX
+     * 
+     * @return mixed
+     */
+    public function validateQuantity()
     {
-        if (!$this->request->getFile('csv_file')) {
-            session()->setFlashdata('error', 'File CSV harus dipilih');
-            return redirect()->back();
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['valid' => false]);
         }
 
-        $file = $this->request->getFile('csv_file');
+        $productId = $this->request->getPost('product_id');
+        $quantity = $this->request->getPost('quantity');
+        $purchaseId = $this->request->getPost('purchase_id');
 
-        if (!$file->isValid()) {
-            session()->setFlashdata('error', 'File tidak valid');
-            return redirect()->back();
+        if (!$productId || !$quantity) {
+            return $this->response->setJSON(['valid' => false, 'message' => 'Data tidak lengkap']);
         }
 
-        if ($file->getExtension() !== 'csv') {
-            session()->setFlashdata('error', 'File harus berformat CSV');
-            return redirect()->back();
-        }
+        // If purchase_id is provided, validate against purchase quantity
+        if ($purchaseId) {
+            $purchaseDetail = $this->purchaseDetailModel->where('purchase_id', $purchaseId)
+                ->where('product_id', $productId)
+                ->first();
 
-        try {
-            $handle = fopen($file->getTempName(), 'r');
-            $header = fgetcsv($handle); // Skip header row
-
-            $successCount = 0;
-            $errorCount = 0;
-            $errors = [];
-
-            while (($row = fgetcsv($handle)) !== false) {
-                try {
-                    // Validate and process each row
-                    $data = [
-                        'product_id' => $row[0],
-                        'date' => $row[1] . ' ' . date('H:i:s'),
-                        'quantity' => $row[2],
-                        'purchase_id' => !empty($row[3]) ? $row[3] : null,
-                        'notes' => $row[4] ?? '',
-                        'user_id' => session()->get('user_id')
-                    ];
-
-                    $result = $this->incomingModel->addIncomingItem($data);
-
-                    if ($result['success']) {
-                        $successCount++;
-                    } else {
-                        $errorCount++;
-                        $errors[] = "Baris " . ($successCount + $errorCount + 1) . ": " . $result['message'];
-                    }
-                } catch (\Exception $e) {
-                    $errorCount++;
-                    $errors[] = "Baris " . ($successCount + $errorCount + 1) . ": " . $e->getMessage();
-                }
+            if (!$purchaseDetail) {
+                return $this->response->setJSON(['valid' => false, 'message' => 'Produk tidak ditemukan dalam pembelian']);
             }
 
-            fclose($handle);
+            $receivedQty = $this->incomingModel->where('purchase_id', $purchaseId)
+                ->where('product_id', $productId)
+                ->selectSum('quantity')
+                ->first()['quantity'] ?? 0;
 
-            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            $remainingQty = $purchaseDetail['quantity'] - $receivedQty;
 
-            if ($errorCount > 0) {
-                session()->setFlashdata('warning', $message);
-                session()->setFlashdata('import_errors', $errors);
-            } else {
-                session()->setFlashdata('success', $message);
+            if ($quantity > $remainingQty) {
+                return $this->response->setJSON([
+                    'valid' => false,
+                    'message' => "Jumlah melebihi sisa yang belum diterima ({$remainingQty})"
+                ]);
             }
-        } catch (\Exception $e) {
-            session()->setFlashdata('error', 'Error saat memproses file: ' . $e->getMessage());
         }
 
-        return redirect()->to('/incoming-items');
+        return $this->response->setJSON(['valid' => true]);
     }
 }

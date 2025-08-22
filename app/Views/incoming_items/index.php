@@ -176,13 +176,13 @@
                                         title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="<?= base_url('/incoming-items/print-receipt/' . $item['id']) ?>"
+                                    <a href="<?= base_url('/incoming-items/receipt/' . $item['id']) ?>"
                                         target="_blank"
                                         class="text-purple-600 hover:text-purple-900 transition duration-150 ease-in-out"
                                         title="Print Receipt">
                                         <i class="fas fa-print"></i>
                                     </a>
-                                    <button onclick="confirmDelete(<?= $item['id'] ?>)"
+                                    <button type="button" onclick="confirmDelete(<?= $item['id'] ?>)"
                                         class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out"
                                         title="Hapus">
                                         <i class="fas fa-trash"></i>
@@ -214,11 +214,11 @@
             <h3 class="text-lg font-medium text-gray-900 mt-2">Hapus Data Barang Masuk</h3>
             <div class="mt-2 px-7 py-3">
                 <p class="text-sm text-gray-500">
-                    Apakah Anda yakin ingin menghapus data barang masuk ini? Data yang dihapus tidak dapat dikembalikan.
+                    Apakah Anda yakin ingin menghapus data barang masuk ini? Data yang dihapus tidak dapat dikembalikan dan stok produk akan disesuaikan.
                 </p>
             </div>
             <div class="items-center px-4 py-3">
-                <button id="confirmDelete"
+                <button id="confirmDeleteBtn"
                     class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
                     Ya, Hapus
                 </button>
@@ -231,31 +231,62 @@
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
-    let deleteId = null;
+    document.addEventListener('DOMContentLoaded', function() {
+        let deleteId = null;
 
-    function confirmDelete(id) {
-        deleteId = id;
-        document.getElementById('deleteModal').classList.remove('hidden');
-    }
+        // Function to show delete confirmation modal
+        window.confirmDelete = function(id) {
+            deleteId = id;
+            console.log('Deleting item with ID:', id); // Debug log
+            document.getElementById('deleteModal').classList.remove('hidden');
+        };
 
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.add('hidden');
-        deleteId = null;
-    }
+        // Function to close delete modal
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            deleteId = null;
+        };
 
-    document.getElementById('confirmDelete').addEventListener('click', function() {
-        if (deleteId) {
-            window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + deleteId;
-        }
-    });
+        // Confirm delete button click handler
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (deleteId) {
+                console.log('Confirming delete for ID:', deleteId); // Debug log
+                // Create form and submit
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '<?= base_url('/incoming-items/delete/') ?>' + deleteId;
 
-    // Close modal when clicking outside
-    document.getElementById('deleteModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDeleteModal();
-        }
+                // Add CSRF token if needed
+                <?php if (csrf_token()): ?>
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '<?= csrf_token() ?>';
+                    csrfInput.value = '<?= csrf_hash() ?>';
+                    form.appendChild(csrfInput);
+                <?php endif; ?>
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
     });
 </script>
-
 <?= $this->endSection() ?>
