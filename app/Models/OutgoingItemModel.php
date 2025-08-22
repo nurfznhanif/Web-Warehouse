@@ -55,71 +55,7 @@ class OutgoingItemModel extends Model
         ]
     ];
 
-    public function addOutgoingItem($data)
-    {
-        $this->db->transStart();
-
-        try {
-            // Check stock availability
-            $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($data['product_id']);
-
-            if (!$product) {
-                throw new \Exception('Produk tidak ditemukan');
-            }
-
-            if ($product['stock'] < $data['quantity']) {
-                throw new \Exception('Stok tidak mencukupi. Stok tersedia: ' . $product['stock'] . ' ' . $product['unit']);
-            }
-
-            // Insert outgoing item
-            if (!$this->insert($data)) {
-                throw new \Exception('Gagal menyimpan data barang keluar');
-            }
-
-            // Update product stock (reduce)
-            $newStock = $product['stock'] - $data['quantity'];
-            if (!$productModel->update($data['product_id'], ['stock' => $newStock])) {
-                throw new \Exception('Gagal mengupdate stok produk');
-            }
-
-            $this->db->transComplete();
-
-            if ($this->db->transStatus() === false) {
-                throw new \Exception('Transaksi gagal');
-            }
-
-            return ['success' => true, 'message' => 'Barang keluar berhasil dicatat'];
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
-    public function getOutgoingStatistics()
-    {
-        $today = date('Y-m-d');
-        $thisMonth = date('Y-m');
-
-        // Today's statistics
-        $todayStats = $this->where('DATE(date)', $today)
-            ->selectSum('quantity', 'total_quantity')
-            ->selectCount('id', 'total_count')
-            ->first();
-
-        // This month's statistics
-        $monthStats = $this->where('DATE_FORMAT(date, "%Y-%m")', $thisMonth)
-            ->selectCount('id', 'total_count')
-            ->first();
-
-        return [
-            'today_count' => $todayStats['total_count'] ?? 0,
-            'today_quantity' => $todayStats['total_quantity'] ?? 0,
-            'month_count' => $monthStats['total_count'] ?? 0
-        ];
-    }
-
-    public function getOutgoingItemsWithDetails($limit = null, $offset = null, $search = null, $startDate = null, $endDate = null)
+    public function getOutgoingItemsWithDetails($limit = null, $offset = null, $search = null, $startDate = null, $endDate = null, $productId = null)
     {
         $builder = $this->select('outgoing_items.*, 
                                  products.name as product_name, 
@@ -135,8 +71,8 @@ class OutgoingItemModel extends Model
             $builder->groupStart()
                 ->like('products.name', $search)
                 ->orLike('products.code', $search)
-                ->orLike('outgoing_items.recipient', $search)
                 ->orLike('outgoing_items.description', $search)
+                ->orLike('outgoing_items.recipient', $search)
                 ->groupEnd();
         }
 
@@ -146,6 +82,10 @@ class OutgoingItemModel extends Model
 
         if ($endDate) {
             $builder->where('DATE(outgoing_items.date) <=', $endDate);
+        }
+
+        if ($productId) {
+            $builder->where('outgoing_items.product_id', $productId);
         }
 
         $builder->orderBy('outgoing_items.date', 'DESC');
@@ -157,7 +97,7 @@ class OutgoingItemModel extends Model
         return $builder->findAll();
     }
 
-    public function countOutgoingItemsWithDetails($search = null, $startDate = null, $endDate = null)
+    public function countOutgoingItemsWithDetails($search = null, $startDate = null, $endDate = null, $productId = null)
     {
         $builder = $this->join('products', 'products.id = outgoing_items.product_id')
             ->join('categories', 'categories.id = products.category_id');
@@ -166,8 +106,8 @@ class OutgoingItemModel extends Model
             $builder->groupStart()
                 ->like('products.name', $search)
                 ->orLike('products.code', $search)
-                ->orLike('outgoing_items.recipient', $search)
                 ->orLike('outgoing_items.description', $search)
+                ->orLike('outgoing_items.recipient', $search)
                 ->groupEnd();
         }
 
@@ -177,6 +117,10 @@ class OutgoingItemModel extends Model
 
         if ($endDate) {
             $builder->where('DATE(outgoing_items.date) <=', $endDate);
+        }
+
+        if ($productId) {
+            $builder->where('outgoing_items.product_id', $productId);
         }
 
         return $builder->countAllResults();
@@ -197,44 +141,28 @@ class OutgoingItemModel extends Model
             ->first();
     }
 
-    public function updateOutgoingItem($id, $data)
+    public function addOutgoingItem($data)
     {
         $this->db->transStart();
 
         try {
-            // Get current item data
-            $currentItem = $this->find($id);
-            if (!$currentItem) {
-                throw new \Exception('Data barang keluar tidak ditemukan');
-            }
-
+            // Check stock availability
             $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($currentItem['product_id']);
+            $product = $productModel->find($data['product_id']);
 
             if (!$product) {
                 throw new \Exception('Produk tidak ditemukan');
             }
 
-            // Calculate stock adjustment
-            $oldQuantity = $currentItem['quantity'];
-            $newQuantity = $data['quantity'];
-            $stockAdjustment = $oldQuantity - $newQuantity; // Positive = add to stock, Negative = remove from stock
-
-            $newStock = $product['stock'] + $stockAdjustment;
-
-            // Check if new quantity exceeds available stock
-            if ($newStock < 0) {
-                throw new \Exception('Stok tidak mencukupi untuk perubahan ini. Stok tersedia: ' . $product['stock'] . ' ' . $product['unit']);
+            if ($product['stock'] < $data['quantity']) {
+                throw new \Exception('Stok tidak mencukupi. Stok tersedia: ' . $product['stock'] . ' ' . $product['unit']);
             }
 
-            // Update outgoing item
-            if (!$this->update($id, $data)) {
-                throw new \Exception('Gagal mengupdate data barang keluar');
-            }
+            // Insert outgoing item - Database trigger akan otomatis mengurangi stok
+            $outgoingId = $this->insert($data);
 
-            // Update product stock
-            if (!$productModel->update($currentItem['product_id'], ['stock' => $newStock])) {
-                throw new \Exception('Gagal mengupdate stok produk');
+            if (!$outgoingId) {
+                throw new \Exception('Gagal menambahkan barang keluar');
             }
 
             $this->db->transComplete();
@@ -243,7 +171,50 @@ class OutgoingItemModel extends Model
                 throw new \Exception('Transaksi gagal');
             }
 
-            return ['success' => true, 'message' => 'Data barang keluar berhasil diupdate'];
+            return ['success' => true, 'id' => $outgoingId];
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function updateOutgoingItem($id, $data)
+    {
+        $this->db->transStart();
+
+        try {
+            // Get original item
+            $originalItem = $this->find($id);
+            if (!$originalItem) {
+                throw new \Exception('Item tidak ditemukan');
+            }
+
+            // Validasi stok jika quantity berubah
+            if ($data['quantity'] != $originalItem['quantity']) {
+                $productModel = new \App\Models\ProductModel();
+                $product = $productModel->find($originalItem['product_id']);
+
+                // Hitung stok setelah perubahan
+                // Current stock + original quantity - new quantity
+                $stockAfterChange = $product['stock'] + $originalItem['quantity'] - $data['quantity'];
+
+                if ($stockAfterChange < 0) {
+                    throw new \Exception('Stok tidak mencukupi untuk perubahan ini');
+                }
+            }
+
+            // Update outgoing item - Database trigger akan otomatis menyesuaikan stok
+            if (!$this->update($id, $data)) {
+                throw new \Exception('Gagal mengupdate item');
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            return ['success' => true];
         } catch (\Exception $e) {
             $this->db->transRollback();
             return ['success' => false, 'message' => $e->getMessage()];
@@ -255,23 +226,18 @@ class OutgoingItemModel extends Model
         $this->db->transStart();
 
         try {
-            // Get item details
+            // Get item details untuk validasi
             $item = $this->find($id);
             if (!$item) {
                 throw new \Exception('Item tidak ditemukan');
             }
 
             // Delete outgoing item
+            // PENTING: JANGAN tambahkan manual stock adjustment!
+            // Database trigger 'after_outgoing_delete' akan otomatis menambah stok kembali
             if (!$this->delete($id)) {
                 throw new \Exception('Gagal menghapus item');
             }
-
-            // Restore product stock (add back the outgoing quantity)
-            $productModel = new \App\Models\ProductModel();
-            $product = $productModel->find($item['product_id']);
-            $newStock = $product['stock'] + $item['quantity'];
-
-            $productModel->update($item['product_id'], ['stock' => $newStock]);
 
             $this->db->transComplete();
 
@@ -286,49 +252,70 @@ class OutgoingItemModel extends Model
         }
     }
 
-    public function bulkInsert($items)
+    public function getOutgoingReport($startDate = null, $endDate = null, $productId = null, $categoryId = null)
     {
-        $this->db->transStart();
+        $builder = $this->select('outgoing_items.*, 
+                                 products.name as product_name, 
+                                 products.code as product_code,
+                                 products.unit,
+                                 categories.name as category_name,
+                                 users.full_name as user_name')
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->join('categories', 'categories.id = products.category_id')
+            ->join('users', 'users.id = outgoing_items.user_id');
 
-        try {
-            $productModel = new \App\Models\ProductModel();
-
-            // Validate all items first
-            foreach ($items as $item) {
-                $product = $productModel->find($item['product_id']);
-                if (!$product) {
-                    throw new \Exception('Produk dengan ID ' . $item['product_id'] . ' tidak ditemukan');
-                }
-
-                if ($product['stock'] < $item['quantity']) {
-                    throw new \Exception('Stok tidak mencukupi untuk produk: ' . $product['name'] . '. Stok tersedia: ' . $product['stock']);
-                }
-            }
-
-            // Insert all items and update stock
-            foreach ($items as $item) {
-                // Insert outgoing item
-                if (!$this->insert($item)) {
-                    throw new \Exception('Gagal menyimpan item');
-                }
-
-                // Update product stock
-                $product = $productModel->find($item['product_id']);
-                $newStock = $product['stock'] - $item['quantity'];
-                $productModel->update($item['product_id'], ['stock' => $newStock]);
-            }
-
-            $this->db->transComplete();
-
-            if ($this->db->transStatus() === false) {
-                throw new \Exception('Transaksi gagal');
-            }
-
-            return ['success' => true];
-        } catch (\Exception $e) {
-            $this->db->transRollback();
-            return ['success' => false, 'message' => $e->getMessage()];
+        if ($startDate) {
+            $builder->where('DATE(outgoing_items.date) >=', $startDate);
         }
+
+        if ($endDate) {
+            $builder->where('DATE(outgoing_items.date) <=', $endDate);
+        }
+
+        if ($productId) {
+            $builder->where('outgoing_items.product_id', $productId);
+        }
+
+        if ($categoryId) {
+            $builder->where('products.category_id', $categoryId);
+        }
+
+        return $builder->orderBy('outgoing_items.date', 'DESC')
+            ->findAll();
+    }
+
+    public function getOutgoingStatistics()
+    {
+        $stats = [];
+
+        // Total outgoing items
+        $stats['total_items'] = $this->countAll();
+
+        // Today's outgoing
+        $stats['today_outgoing'] = $this->where('DATE(date)', date('Y-m-d'))->countAllResults(false);
+
+        // This month's outgoing
+        $stats['monthly_outgoing'] = $this->where('YEAR(date)', date('Y'))
+            ->where('MONTH(date)', date('m'))
+            ->countAllResults(false);
+
+        // Total quantity issued
+        $totalQuantity = $this->selectSum('quantity')->first();
+        $stats['total_quantity'] = $totalQuantity['quantity'] ?? 0;
+
+        // Most issued product
+        $mostIssued = $this->select('products.name, products.code, SUM(outgoing_items.quantity) as total_quantity')
+            ->join('products', 'products.id = outgoing_items.product_id')
+            ->groupBy('products.id, products.name, products.code')
+            ->orderBy('total_quantity', 'DESC')
+            ->first();
+        $stats['most_issued_product'] = $mostIssued;
+
+        // Recent outgoing (last 7 days)
+        $stats['recent_outgoing'] = $this->where('date >=', date('Y-m-d H:i:s', strtotime('-7 days')))
+            ->countAllResults(false);
+
+        return $stats;
     }
 
     public function getRecentOutgoing($limit = 5)
@@ -343,5 +330,20 @@ class OutgoingItemModel extends Model
             ->orderBy('outgoing_items.created_at', 'DESC')
             ->limit($limit)
             ->findAll();
+    }
+
+    public function getOutgoingByProduct($productId, $limit = null)
+    {
+        $builder = $this->select('outgoing_items.*, 
+                                 users.full_name as user_name')
+            ->join('users', 'users.id = outgoing_items.user_id', 'left')
+            ->where('outgoing_items.product_id', $productId)
+            ->orderBy('outgoing_items.date', 'DESC');
+
+        if ($limit) {
+            $builder->limit($limit);
+        }
+
+        return $builder->findAll();
     }
 }

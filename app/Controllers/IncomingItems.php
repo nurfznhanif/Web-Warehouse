@@ -37,6 +37,9 @@ class IncomingItems extends BaseController
         $incomingItems = $this->incomingModel->getIncomingItemsWithDetails($perPage, $offset, $search, $startDate, $endDate);
         $totalItems = $this->incomingModel->countIncomingItemsWithDetails($search, $startDate, $endDate);
 
+        // ✅ TAMBAHAN: Get pending purchases untuk receive button
+        $pendingPurchases = $this->purchaseModel->getPurchasesWithDetails(10, null, null, 'pending');
+
         $pager = \Config\Services::pager();
         $pager->setPath('incoming-items');
 
@@ -50,7 +53,8 @@ class IncomingItems extends BaseController
             'total_items' => $totalItems,
             'current_page' => $currentPage,
             'per_page' => $perPage,
-            'statistics' => $this->incomingModel->getIncomingStatistics()
+            'statistics' => $this->incomingModel->getIncomingStatistics(),
+            'pending_purchases' => $pendingPurchases // ✅ TAMBAHAN DATA
         ];
 
         return view('incoming_items/index', $data);

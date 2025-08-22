@@ -163,8 +163,8 @@ class IncomingItemModel extends Model
 
     public function addIncomingItem($data)
     {
-        // Method lengkap dengan validasi TANPA update stok
-        // Update stok akan dilakukan di controller
+        // Method lengkap dengan validasi dan TANPA manual stock update
+        // Database trigger akan otomatis menambah stok
 
         $this->db->transStart();
 
@@ -204,7 +204,7 @@ class IncomingItemModel extends Model
                 throw new \Exception('Jumlah penerimaan (' . $newTotal . ') melebihi jumlah pembelian (' . $purchaseDetail['quantity'] . ')');
             }
 
-            // Insert data barang masuk SAJA - tanpa update stok dan status
+            // Insert data barang masuk - Database trigger akan otomatis menambah stok
             $incomingId = $this->insert($data);
             if (!$incomingId) {
                 throw new \Exception('Gagal menyimpan data barang masuk');
@@ -233,7 +233,8 @@ class IncomingItemModel extends Model
                 throw new \Exception('Item tidak ditemukan');
             }
 
-            // Hanya boleh update notes dan user_id
+            // Hanya boleh update notes dan user_id untuk menjaga konsistensi
+            // Karena quantity dan product_id berhubungan dengan stock yang dikelola trigger
             $allowedFields = ['notes', 'user_id'];
             $updateData = [];
 
@@ -274,22 +275,20 @@ class IncomingItemModel extends Model
                 throw new \Exception('Item tidak ditemukan');
             }
 
-            // Hapus data barang masuk
-            if (!$this->delete($id)) {
-                throw new \Exception('Gagal menghapus item');
-            }
-
-            // Kurangi stok produk
+            // Cek apakah penghapusan akan menyebabkan stok negatif
             $productModel = new \App\Models\ProductModel();
             $product = $productModel->find($item['product_id']);
-            $newStock = $product['stock'] - $item['quantity'];
+            $stockAfterDelete = $product['stock'] - $item['quantity'];
 
-            if ($newStock < 0) {
+            if ($stockAfterDelete < 0) {
                 throw new \Exception('Penghapusan akan menyebabkan stok negatif');
             }
 
-            if (!$productModel->update($item['product_id'], ['stock' => $newStock])) {
-                throw new \Exception('Gagal memperbarui stok produk');
+            // Hapus data barang masuk
+            // PENTING: JANGAN tambahkan manual stock adjustment!
+            // Database trigger 'after_incoming_delete' akan otomatis mengurangi stok
+            if (!$this->delete($id)) {
+                throw new \Exception('Gagal menghapus item');
             }
 
             // Jika item ini dari pembelian, kembalikan status pembelian ke pending
