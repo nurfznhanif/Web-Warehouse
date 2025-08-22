@@ -24,7 +24,7 @@ $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::processLogin');
 $routes->get('/logout', 'Auth::logout');
 
-// Categories routes - Simplified
+// Categories routes
 $routes->get('/categories', 'Categories::index');
 $routes->get('/categories/create', 'Categories::create');
 $routes->post('/categories/store', 'Categories::store');
@@ -32,7 +32,7 @@ $routes->get('/categories/edit/(:num)', 'Categories::edit/$1');
 $routes->post('/categories/update/(:num)', 'Categories::update/$1');
 $routes->get('/categories/delete/(:num)', 'Categories::delete/$1');
 
-// Products routes - dengan filter auth
+// Products routes
 $routes->group('products', ['filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Products::index');
     $routes->get('index', 'Products::index');
@@ -60,8 +60,6 @@ $routes->post('/vendors/update/(:num)', 'Vendors::update/$1');
 $routes->get('/vendors/delete/(:num)', 'Vendors::delete/$1');
 
 // Purchases routes
-
-// Purchases routes - Lengkap
 $routes->group('purchases', ['filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Purchases::index');
     $routes->get('index', 'Purchases::index');
@@ -75,54 +73,54 @@ $routes->group('purchases', ['filter' => 'auth'], function ($routes) {
     $routes->get('duplicate/(:num)', 'Purchases::duplicate/$1');
 });
 
-// Incoming items routes (complete and corrected)
+// ===== INCOMING ITEMS ROUTES (BERSIH TANPA DUPLIKASI) =====
 $routes->group('incoming-items', ['filter' => 'auth'], function ($routes) {
     // Main CRUD routes
     $routes->get('/', 'IncomingItems::index');
     $routes->get('index', 'IncomingItems::index');
     $routes->get('create', 'IncomingItems::create');
     $routes->post('store', 'IncomingItems::store');
+    $routes->get('view/(:num)', 'IncomingItems::view/$1');
     $routes->get('edit/(:num)', 'IncomingItems::edit/$1');
     $routes->post('update/(:num)', 'IncomingItems::update/$1');
+    $routes->put('update/(:num)', 'IncomingItems::update/$1');
     $routes->get('delete/(:num)', 'IncomingItems::delete/$1', ['filter' => 'auth:admin']);
+    $routes->delete('delete/(:num)', 'IncomingItems::delete/$1', ['filter' => 'auth:admin']);
 
-    // AJAX endpoints - HANYA DI DALAM GROUP INI
+    // Special features
+    $routes->get('history/(:num)', 'IncomingItems::history/$1');
+    $routes->get('receive-from-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1');
+    $routes->get('print-receipt/(:num)', 'IncomingItems::printReceipt/$1');
+    $routes->get('export', 'IncomingItems::export');
+    $routes->post('bulk-import', 'IncomingItems::bulkImport');
+
+    // AJAX endpoints
     $routes->get('get-purchase-items/(:num)', 'IncomingItems::getPurchaseItems/$1');
     $routes->get('get-product-info/(:num)', 'IncomingItems::getProductInfo/$1');
     $routes->post('validate-quantity', 'IncomingItems::validateQuantity');
     $routes->post('bulk-receive', 'IncomingItems::bulkReceive');
     $routes->get('get-summary', 'IncomingItems::getSummary');
-
-    // Special features
-    $routes->get('receive-from-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1');
-    $routes->get('history/(:num)', 'IncomingItems::history/$1');
-    $routes->get('print-receipt/(:num)', 'IncomingItems::printReceipt/$1');
-    $routes->get('export', 'IncomingItems::export');
 });
 
-// Legacy routes untuk backward compatibility
-$routes->group('incoming', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'IncomingItems::index');
-    $routes->get('create', 'IncomingItems::create');
-    $routes->post('store', 'IncomingItems::store');
-    $routes->get('get-purchase-items/(:num)', 'IncomingItems::getPurchaseItems/$1');
-    $routes->post('validate-quantity', 'IncomingItems::validateQuantity');
-});
+// Legacy routes untuk backward compatibility (HANYA yang penting)
+$routes->get('/incoming', 'IncomingItems::index');
+$routes->get('/incoming/create', 'IncomingItems::create');
+$routes->post('/incoming/store', 'IncomingItems::store');
+$routes->get('/incoming/get-purchase-items/(:num)', 'IncomingItems::getPurchaseItems/$1');
 
-// Quick access routes (tanpa prefix)
-$routes->get('/receive-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1', ['filter' => 'auth']);
-$routes->get('/incoming-history/(:num)', 'IncomingItems::history/$1', ['filter' => 'auth']);
-
-
-// Outgoing items routes - Complete
+// ===== OUTGOING ITEMS ROUTES =====
 $routes->group('outgoing-items', ['filter' => 'auth'], function ($routes) {
+    // Main CRUD routes
     $routes->get('/', 'OutgoingItems::index');
     $routes->get('index', 'OutgoingItems::index');
     $routes->get('create', 'OutgoingItems::create');
     $routes->post('store', 'OutgoingItems::store');
+    $routes->get('view/(:num)', 'OutgoingItems::view/$1');
     $routes->get('edit/(:num)', 'OutgoingItems::edit/$1');
     $routes->post('update/(:num)', 'OutgoingItems::update/$1');
     $routes->get('delete/(:num)', 'OutgoingItems::delete/$1');
+
+    // Special features
     $routes->get('history/(:num)', 'OutgoingItems::history/$1');
     $routes->get('export', 'OutgoingItems::export');
 
@@ -132,18 +130,7 @@ $routes->group('outgoing-items', ['filter' => 'auth'], function ($routes) {
     $routes->post('bulk-issue', 'OutgoingItems::bulkIssue');
 });
 
-// Legacy outgoing routes - untuk backward compatibility
-$routes->group('outgoing', ['filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'OutgoingItems::index');
-    $routes->get('index', 'OutgoingItems::index');
-    $routes->get('create', 'OutgoingItems::create');
-    $routes->post('store', 'OutgoingItems::store');
-    $routes->get('edit/(:num)', 'OutgoingItems::edit/$1');
-    $routes->post('update/(:num)', 'OutgoingItems::update/$1');
-    $routes->get('delete/(:num)', 'OutgoingItems::delete/$1');
-});
-
-// Legacy outgoing routes
+// Legacy outgoing routes untuk backward compatibility
 $routes->get('/outgoing', 'OutgoingItems::index');
 $routes->get('/outgoing/create', 'OutgoingItems::create');
 $routes->post('/outgoing/store', 'OutgoingItems::store');
@@ -153,3 +140,7 @@ $routes->get('/reports', 'Reports::index');
 $routes->get('/reports/incoming', 'Reports::incoming');
 $routes->get('/reports/outgoing', 'Reports::outgoing');
 $routes->get('/reports/stock', 'Reports::stock');
+
+// Quick access routes (shortcuts)
+$routes->get('/receive-purchase/(:num)', 'IncomingItems::receiveFromPurchase/$1', ['filter' => 'auth']);
+$routes->get('/incoming-history/(:num)', 'IncomingItems::history/$1', ['filter' => 'auth']);

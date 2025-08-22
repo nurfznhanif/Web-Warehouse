@@ -112,17 +112,24 @@ class ProductModel extends Model
             ->first();
     }
 
-    public function getProductsForSelect($categoryId = null)
+    /**
+     * Get products for select dropdown - UNIFIED VERSION
+     * Supports both category filtering and stock filtering
+     */
+    public function getProductsForSelect($categoryId = null, $includeOutOfStock = true)
     {
-        $builder = $this->select('id, name, code, unit, stock, min_stock');
+        $builder = $this->select('products.id, products.name, products.code, products.unit, products.stock, products.min_stock, categories.name as category_name')
+            ->join('categories', 'categories.id = products.category_id', 'left');
 
         if ($categoryId) {
-            $builder->where('category_id', $categoryId);
+            $builder->where('products.category_id', $categoryId);
         }
 
-        return $builder->where('stock >', 0)
-            ->orderBy('name', 'ASC')
-            ->findAll();
+        if (!$includeOutOfStock) {
+            $builder->where('products.stock >', 0);
+        }
+
+        return $builder->orderBy('products.name', 'ASC')->findAll();
     }
 
     public function searchProducts($keyword, $limit = 10)
@@ -139,6 +146,10 @@ class ProductModel extends Model
     // STOCK MANAGEMENT
     // ========================================
 
+    /**
+     * Check stock availability - UNIFIED VERSION
+     * Enhanced with detailed stock information
+     */
     public function checkStockAvailability($productId, $quantity)
     {
         $product = $this->find($productId);
@@ -153,7 +164,10 @@ class ProductModel extends Model
         if ($product['stock'] < $quantity) {
             return [
                 'available' => false,
-                'message' => 'Stok tidak mencukupi. Stok tersedia: ' . number_format($product['stock']) . ' ' . $product['unit']
+                'message' => 'Stok tidak mencukupi. Stok tersedia: ' . number_format($product['stock']) . ' ' . $product['unit'],
+                'current_stock' => $product['stock'],
+                'requested_quantity' => $quantity,
+                'shortage' => $quantity - $product['stock']
             ];
         }
 
@@ -161,7 +175,8 @@ class ProductModel extends Model
             'available' => true,
             'current_stock' => $product['stock'],
             'remaining_stock' => $product['stock'] - $quantity,
-            'min_stock' => $product['min_stock']
+            'min_stock' => $product['min_stock'],
+            'is_low_stock' => ($product['stock'] - $quantity) <= $product['min_stock']
         ];
     }
 
@@ -487,5 +502,53 @@ class ProductModel extends Model
         }
 
         return $prefix . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Validate product data before save
+     */
+    public function validateProductData($data, $id = null)
+    {
+        $errors = [];
+
+        // Check if category exists
+        if (isset($data['category_id'])) {
+            $categoryExists = $this->db->table('categories')
+                ->where('id', $data['category_id'])
+                ->countAllResults();
+
+            if ($categoryExists == 0) {
+                $errors[] = 'Kategori tidak ditemukan';
+            }
+        }
+
+        // Check unique code
+        if (isset($data['code'])) {
+            $codeExists = $this->where('code', $data['code']);
+            if ($id) {
+                $codeExists->where('id !=', $id);
+            }
+
+            if ($codeExists->countAllResults() > 0) {
+                $errors[] = 'Kode produk sudah digunakan';
+            }
+        }
+
+        return empty($errors) ? ['valid' => true] : ['valid' => false, 'errors' => $errors];
+    }
+
+    /**
+     * Get product details with full information for forms
+     */
+    public function getProductForForm($id)
+    {
+        $product = $this->getProductWithCategory($id);
+
+        if ($product) {
+            $product['statistics'] = $this->getProductStatistics($id);
+            $product['has_transactions'] = $this->hasTransactions($id);
+        }
+
+        return $product;
     }
 }
