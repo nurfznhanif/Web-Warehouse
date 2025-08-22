@@ -36,10 +36,10 @@ class IncomingItems extends BaseController
         $offset = ($currentPage - 1) * $perPage;
         $incomingItems = $this->incomingModel->getIncomingItemsWithDetails($perPage, $offset, $search, $startDate, $endDate);
         $totalItems = $this->incomingModel->countIncomingItemsWithDetails($search, $startDate, $endDate);
-        
+
         $pager = \Config\Services::pager();
         $pager->setPath('incoming-items');
-        
+
         $data = [
             'title' => 'Barang Masuk - Vadhana Warehouse',
             'incoming_items' => $incomingItems,
@@ -80,8 +80,8 @@ class IncomingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -107,7 +107,7 @@ class IncomingItems extends BaseController
     public function view($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -128,7 +128,7 @@ class IncomingItems extends BaseController
     public function edit($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -148,7 +148,7 @@ class IncomingItems extends BaseController
     public function update($id)
     {
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -164,8 +164,8 @@ class IncomingItems extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('validation', $this->validator);
+                ->withInput()
+                ->with('validation', $this->validator);
         }
 
         $data = [
@@ -190,7 +190,7 @@ class IncomingItems extends BaseController
     public function delete($id)
     {
         $incomingItem = $this->incomingModel->find($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -210,7 +210,7 @@ class IncomingItems extends BaseController
     public function printReceipt($id)
     {
         $incomingItem = $this->incomingModel->getIncomingItemWithDetails($id);
-        
+
         if (!$incomingItem) {
             session()->setFlashdata('error', 'Data barang masuk tidak ditemukan');
             return redirect()->to('/incoming-items');
@@ -227,7 +227,7 @@ class IncomingItems extends BaseController
     public function history($productId)
     {
         $product = $this->productModel->getProductWithCategory($productId);
-        
+
         if (!$product) {
             session()->setFlashdata('error', 'Produk tidak ditemukan');
             return redirect()->to('/products');
@@ -248,7 +248,7 @@ class IncomingItems extends BaseController
     {
         try {
             $purchaseItems = $this->purchaseDetailModel->getPurchaseDetailsByPurchaseId($purchaseId);
-            
+
             $items = [];
             foreach ($purchaseItems as $item) {
                 $items[] = [
@@ -260,12 +260,11 @@ class IncomingItems extends BaseController
                     'price' => $item['price']
                 ];
             }
-            
+
             return $this->response->setJSON([
                 'success' => true,
                 'data' => $items
             ]);
-            
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
@@ -287,12 +286,12 @@ class IncomingItems extends BaseController
         $this->response->setHeader('Content-Disposition', 'attachment; filename="barang_masuk_' . date('Y-m-d') . '.csv"');
 
         $output = fopen('php://output', 'w');
-        
+
         // CSV Headers
         fputcsv($output, [
             'No',
             'Tanggal',
-            'Waktu', 
+            'Waktu',
             'Produk',
             'Kode Produk',
             'Kategori',
@@ -334,7 +333,7 @@ class IncomingItems extends BaseController
         }
 
         $file = $this->request->getFile('csv_file');
-        
+
         if (!$file->isValid()) {
             session()->setFlashdata('error', 'File tidak valid');
             return redirect()->back();
@@ -348,7 +347,7 @@ class IncomingItems extends BaseController
         try {
             $handle = fopen($file->getTempName(), 'r');
             $header = fgetcsv($handle); // Skip header row
-            
+
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
@@ -366,14 +365,13 @@ class IncomingItems extends BaseController
                     ];
 
                     $result = $this->incomingModel->addIncomingItem($data);
-                    
+
                     if ($result['success']) {
                         $successCount++;
                     } else {
                         $errorCount++;
                         $errors[] = "Baris " . ($successCount + $errorCount + 1) . ": " . $result['message'];
                     }
-                    
                 } catch (\Exception $e) {
                     $errorCount++;
                     $errors[] = "Baris " . ($successCount + $errorCount + 1) . ": " . $e->getMessage();
@@ -383,14 +381,13 @@ class IncomingItems extends BaseController
             fclose($handle);
 
             $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
-            
+
             if ($errorCount > 0) {
                 session()->setFlashdata('warning', $message);
                 session()->setFlashdata('import_errors', $errors);
             } else {
                 session()->setFlashdata('success', $message);
             }
-
         } catch (\Exception $e) {
             session()->setFlashdata('error', 'Error saat memproses file: ' . $e->getMessage());
         }

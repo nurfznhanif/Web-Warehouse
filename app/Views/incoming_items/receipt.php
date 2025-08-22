@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +23,7 @@
             max-width: 800px;
             margin: 20px auto;
             background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -48,7 +49,7 @@
         }
 
         .receipt-id {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 8px 20px;
             border-radius: 20px;
             display: inline-block;
@@ -358,13 +359,13 @@
             body {
                 background: white;
             }
-            
+
             .receipt-container {
                 margin: 0;
                 box-shadow: none;
                 border-radius: 0;
             }
-            
+
             .no-print {
                 display: none !important;
             }
@@ -419,6 +420,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Action Buttons -->
     <div class="action-buttons no-print">
@@ -446,13 +448,13 @@
                     <div class="label">Nomor Transaksi</div>
                     <div class="value">#<?= $incoming_item['id'] ?></div>
                 </div>
-                
+
                 <div class="info-item">
                     <div class="label">Tanggal</div>
                     <div class="value"><?= date('d M Y', strtotime($incoming_item['date'])) ?></div>
                     <div class="sub-value"><?= date('H:i:s', strtotime($incoming_item['date'])) ?> WIB</div>
                 </div>
-                
+
                 <div class="info-item">
                     <div class="label">Dicatat Oleh</div>
                     <div class="value"><?= esc($incoming_item['user_name']) ?></div>
@@ -481,27 +483,27 @@
 
             <!-- Purchase Order Info -->
             <?php if (!empty($incoming_item['purchase_number'])): ?>
-            <div class="purchase-section">
-                <h3>📋 Informasi Purchase Order</h3>
-                <div class="purchase-grid">
-                    <div class="purchase-item">
-                        <span class="label">Nomor PO:</span>
-                        <span class="value">PO-<?= $incoming_item['purchase_number'] ?></span>
-                    </div>
-                    <div class="purchase-item">
-                        <span class="label">Vendor:</span>
-                        <span class="value"><?= esc($incoming_item['vendor_name']) ?></span>
+                <div class="purchase-section">
+                    <h3>📋 Informasi Purchase Order</h3>
+                    <div class="purchase-grid">
+                        <div class="purchase-item">
+                            <span class="label">Nomor PO:</span>
+                            <span class="value">PO-<?= $incoming_item['purchase_number'] ?></span>
+                        </div>
+                        <div class="purchase-item">
+                            <span class="label">Vendor:</span>
+                            <span class="value"><?= esc($incoming_item['vendor_name']) ?></span>
+                        </div>
                     </div>
                 </div>
-            </div>
             <?php endif; ?>
 
             <!-- Notes -->
             <?php if (!empty($incoming_item['notes'])): ?>
-            <div class="notes-section">
-                <h3>📝 Catatan</h3>
-                <p><?= nl2br(esc($incoming_item['notes'])) ?></p>
-            </div>
+                <div class="notes-section">
+                    <h3>📝 Catatan</h3>
+                    <p><?= nl2br(esc($incoming_item['notes'])) ?></p>
+                </div>
             <?php endif; ?>
 
             <!-- Stock Impact -->
@@ -511,7 +513,7 @@
                     <div class="label">Dampak Stok</div>
                     <div class="value">+<?= number_format($incoming_item['quantity']) ?> <?= esc($incoming_item['unit']) ?></div>
                 </div>
-                
+
                 <div class="stock-item stock-status">
                     <div class="icon">✅</div>
                     <div class="label">Status</div>
@@ -528,7 +530,7 @@
             <div style="font-size: 0.9em;">
                 Receipt ini adalah bukti sah penerimaan barang di warehouse
             </div>
-            
+
             <div class="signature-area">
                 <div class="signature-grid">
                     <div class="signature-box">
@@ -564,60 +566,62 @@
         }
     </script>
 </body>
-</html>
-                    </div>
-                    
-                    <div class="info-card">
-                        <h3>Status</h3>
-                        <div class="value" style="color: #38a169;">✅ BERHASIL</div>
-                        <div class="sub-value">Stok telah diperbarui</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="footer">
-            <div class="timestamp">
-                Dicetak pada: <?= date('d M Y, H:i:s') ?> WIB
+</html>
+</div>
+
+<div class="info-card">
+    <h3>Status</h3>
+    <div class="value" style="color: #38a169;">✅ BERHASIL</div>
+    <div class="sub-value">Stok telah diperbarui</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <div class="timestamp">
+        Dicetak pada: <?= date('d M Y, H:i:s') ?> WIB
+    </div>
+    <div>
+        <small>Receipt ini adalah bukti sah penerimaan barang di warehouse</small>
+    </div>
+
+    <div class="signature">
+        <div style="display: flex; justify-content: space-around; margin-top: 40px;">
+            <div>
+                <div>Diterima oleh,</div>
+                <div class="signature-line"></div>
+                <div style="margin-top: 10px; font-size: 0.9em;">Petugas Warehouse</div>
             </div>
             <div>
-                <small>Receipt ini adalah bukti sah penerimaan barang di warehouse</small>
-            </div>
-            
-            <div class="signature">
-                <div style="display: flex; justify-content: space-around; margin-top: 40px;">
-                    <div>
-                        <div>Diterima oleh,</div>
-                        <div class="signature-line"></div>
-                        <div style="margin-top: 10px; font-size: 0.9em;">Petugas Warehouse</div>
-                    </div>
-                    <div>
-                        <div>Disetujui oleh,</div>
-                        <div class="signature-line"></div>
-                        <div style="margin-top: 10px; font-size: 0.9em;">Supervisor</div>
-                    </div>
-                </div>
+                <div>Disetujui oleh,</div>
+                <div class="signature-line"></div>
+                <div style="margin-top: 10px; font-size: 0.9em;">Supervisor</div>
             </div>
         </div>
     </div>
+</div>
+</div>
 
-    <script>
-        // Auto print when accessed with ?print=1
+<script>
+    // Auto print when accessed with ?print=1
+    if (window.location.search.includes('print=1')) {
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    }
+
+    // Handle print completion
+    window.onafterprint = function() {
         if (window.location.search.includes('print=1')) {
-            window.onload = function() {
-                setTimeout(() => {
-                    window.print();
-                }, 500);
-            }
+            window.close();
         }
-
-        // Handle print completion
-        window.onafterprint = function() {
-            if (window.location.search.includes('print=1')) {
-                window.close();
-            }
-        }
-    </script>
+    }
+</script>
 </body>
+
 </html>

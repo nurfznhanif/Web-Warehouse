@@ -8,8 +8,8 @@
         <h1 class="text-2xl font-bold text-gray-900">Barang Masuk</h1>
         <p class="text-gray-600">Kelola data barang masuk warehouse</p>
     </div>
-    <a href="<?= base_url('/incoming-items/create') ?>" 
-       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center">
+    <a href="<?= base_url('/incoming-items/create') ?>"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center">
         <i class="fas fa-plus mr-2"></i>
         Tambah Barang Masuk
     </a>
@@ -17,55 +17,55 @@
 
 <!-- Statistics Cards -->
 <?php if (isset($statistics)): ?>
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_items']) ?></p>
-            </div>
-            <div class="bg-green-100 rounded-full p-3">
-                <i class="fas fa-box text-green-600 text-xl"></i>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Transaksi</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_items']) ?></p>
+                </div>
+                <div class="bg-green-100 rounded-full p-3">
+                    <i class="fas fa-box text-green-600 text-xl"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Hari Ini</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['today_incoming']) ?></p>
-            </div>
-            <div class="bg-blue-100 rounded-full p-3">
-                <i class="fas fa-calendar text-blue-600 text-xl"></i>
+        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Hari Ini</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['today_incoming']) ?></p>
+                </div>
+                <div class="bg-blue-100 rounded-full p-3">
+                    <i class="fas fa-calendar text-blue-600 text-xl"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Bulan Ini</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['monthly_incoming']) ?></p>
-            </div>
-            <div class="bg-purple-100 rounded-full p-3">
-                <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Bulan Ini</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['monthly_incoming']) ?></p>
+                </div>
+                <div class="bg-purple-100 rounded-full p-3">
+                    <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Total Kuantitas</p>
-                <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_quantity']) ?></p>
-            </div>
-            <div class="bg-orange-100 rounded-full p-3">
-                <i class="fas fa-cubes text-orange-600 text-xl"></i>
+        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Kuantitas</p>
+                    <p class="text-2xl font-bold text-gray-900"><?= number_format($statistics['total_quantity']) ?></p>
+                </div>
+                <div class="bg-orange-100 rounded-full p-3">
+                    <i class="fas fa-cubes text-orange-600 text-xl"></i>
+                </div>
             </div>
         </div>
     </div>
-</div>
 <?php endif; ?>
 
 <!-- Search and Filter -->
@@ -74,19 +74,19 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Cari</label>
-                <input type="text" id="search" name="search" value="<?= esc($search ?? '') ?>" 
-                       placeholder="Nama produk, kode, atau vendor..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" id="search" name="search" value="<?= esc($search ?? '') ?>"
+                    placeholder="Nama produk, kode, atau vendor..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div>
                 <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label>
                 <input type="date" id="start_date" name="start_date" value="<?= esc($start_date ?? '') ?>"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div>
                 <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Akhir</label>
                 <input type="date" id="end_date" name="end_date" value="<?= esc($end_date ?? '') ?>"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div class="flex items-end space-x-2">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center">
@@ -166,25 +166,25 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <a href="<?= base_url('/incoming-items/view/' . $item['id']) ?>" 
-                                       class="text-blue-600 hover:text-blue-900 transition duration-150 ease-in-out"
-                                       title="Lihat Detail">
+                                    <a href="<?= base_url('/incoming-items/view/' . $item['id']) ?>"
+                                        class="text-blue-600 hover:text-blue-900 transition duration-150 ease-in-out"
+                                        title="Lihat Detail">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>" 
-                                       class="text-indigo-600 hover:text-indigo-900 transition duration-150 ease-in-out"
-                                       title="Edit">
+                                    <a href="<?= base_url('/incoming-items/edit/' . $item['id']) ?>"
+                                        class="text-indigo-600 hover:text-indigo-900 transition duration-150 ease-in-out"
+                                        title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="<?= base_url('/incoming-items/print-receipt/' . $item['id']) ?>" 
-                                       target="_blank"
-                                       class="text-purple-600 hover:text-purple-900 transition duration-150 ease-in-out"
-                                       title="Print Receipt">
+                                    <a href="<?= base_url('/incoming-items/print-receipt/' . $item['id']) ?>"
+                                        target="_blank"
+                                        class="text-purple-600 hover:text-purple-900 transition duration-150 ease-in-out"
+                                        title="Print Receipt">
                                         <i class="fas fa-print"></i>
                                     </a>
-                                    <button onclick="confirmDelete(<?= $item['id'] ?>)" 
-                                            class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out"
-                                            title="Hapus">
+                                    <button onclick="confirmDelete(<?= $item['id'] ?>)"
+                                        class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out"
+                                        title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -218,12 +218,12 @@
                 </p>
             </div>
             <div class="items-center px-4 py-3">
-                <button id="confirmDelete" 
-                        class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                <button id="confirmDelete"
+                    class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
                     Ya, Hapus
                 </button>
-                <button onclick="closeDeleteModal()" 
-                        class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <button onclick="closeDeleteModal()"
+                    class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
                     Batal
                 </button>
             </div>
@@ -232,30 +232,30 @@
 </div>
 
 <script>
-let deleteId = null;
+    let deleteId = null;
 
-function confirmDelete(id) {
-    deleteId = id;
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-    deleteId = null;
-}
-
-document.getElementById('confirmDelete').addEventListener('click', function() {
-    if (deleteId) {
-        window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + deleteId;
+    function confirmDelete(id) {
+        deleteId = id;
+        document.getElementById('deleteModal').classList.remove('hidden');
     }
-});
 
-// Close modal when clicking outside
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeDeleteModal();
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        deleteId = null;
     }
-});
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (deleteId) {
+            window.location.href = '<?= base_url('/incoming-items/delete/') ?>' + deleteId;
+        }
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
 </script>
 
 <?= $this->endSection() ?>
